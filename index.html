@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gym Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;900&family=Archivo+Narrow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0e0e0f;
+  --s1: #161618;
+  --s2: #1e1e21;
+  --s3: #26262a;
+  --border: #2e2e33;
+  --border2: #3a3a40;
+  --text: #f0f0f2;
+  --muted: #7a7a85;
+  --dim: #4a4a55;
+
+  --luis: #e8c547;
+  --luis-dim: rgba(232,197,71,0.12);
+  --her: #e06090;
+  --her-dim: rgba(224,96,144,0.12);
+
+  --green: #4ec97a;
+  --green-dim: rgba(78,201,122,0.12);
+  --red: #e05555;
+  --red-dim: rgba(224,85,85,0.10);
+
+  --accent: var(--luis);
+  --accent-dim: var(--luis-dim);
+
+  --radius: 4px;
+  --font: 'Archivo', sans-serif;
+  --font-narrow: 'Archivo Narrow', sans-serif;
+}
+.profile-her { --accent: var(--her); --accent-dim: var(--her-dim); }
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font); font-size:14px; overscroll-behavior:none; }
+
+/* ── LAYOUT ── */
+#app { display:flex; flex-direction:column; height:100vh; max-width:480px; margin:0 auto; background:var(--bg); position:relative; overflow:hidden; }
+#screen { flex:1; overflow-y:auto; overflow-x:hidden; padding-bottom:72px; }
+#screen::-webkit-scrollbar { width:3px; }
+#screen::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* ── TOP BAR ── */
+#topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px 10px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);
+  position:sticky; top:0; z-index:50;
+  flex-shrink:0;
+}
+#topbar-title { font-size:17px; font-weight:700; letter-spacing:-0.3px; }
+.profile-toggle { display:flex; gap:6px; }
+.pt-btn {
+  font-family:var(--font); font-size:11px; font-weight:600; letter-spacing:0.5px;
+  padding:5px 12px; border:1px solid var(--border2); background:transparent;
+  color:var(--muted); cursor:pointer; border-radius:var(--radius); transition:all 0.15s;
+}
+.pt-btn.active-luis { border-color:var(--luis); color:var(--luis); background:var(--luis-dim); }
+.pt-btn.active-her { border-color:var(--her); color:var(--her); background:var(--her-dim); }
+
+/* ── BOTTOM NAV ── */
+#bottomnav {
+  display:flex; position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:480px;
+  background:var(--s1); border-top:1px solid var(--border);
+  z-index:100;
+}
+.nav-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:10px 0 12px; gap:4px; background:transparent; border:none; cursor:pointer;
+  color:var(--dim); font-family:var(--font); font-size:10px; font-weight:500;
+  letter-spacing:0.5px; text-transform:uppercase; transition:color 0.15s;
+}
+.nav-btn svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.nav-btn.active { color:var(--accent); }
+
+/* ── PAGE TRANSITIONS ── */
+.page { display:none; padding:0; }
+.page.active { display:block; }
+
+/* ── TODAY PAGE ── */
+.today-header { padding:20px 16px 12px; }
+.today-date { font-size:11px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+.today-day { font-size:28px; font-weight:900; letter-spacing:-0.5px; line-height:1; }
+.today-day span { color:var(--accent); }
+
+.session-card {
+  margin:0 16px 10px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--s1);
+}
+.session-card-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  user-select:none;
+}
+.sc-left { display:flex; align-items:center; gap:10px; }
+.sc-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+.sc-name { font-size:14px; font-weight:600; }
+.sc-meta { font-size:11px; color:var(--muted); margin-top:1px; }
+.sc-chevron { color:var(--dim); transition:transform 0.2s; font-size:18px; line-height:1; }
+.session-card.open .sc-chevron { transform:rotate(180deg); }
+
+.exercise-list { display:none; }
+.session-card.open .exercise-list { display:block; }
+
+.ex-row {
+  padding:10px 14px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  transition:background 0.1s;
+}
+.ex-row:last-child { border-bottom:none; }
+.ex-row:hover { background:var(--s2); }
+.ex-row-top { display:flex; align-items:center; justify-content:space-between; }
+.ex-name { font-size:13px; font-weight:500; }
+.ex-target { font-size:11px; color:var(--muted); margin-top:2px; }
+.ex-log-badge {
+  font-size:10px; font-weight:600; letter-spacing:0.5px;
+  padding:3px 8px; border-radius:2px;
+  background:var(--green-dim); color:var(--green);
+  white-space:nowrap;
+}
+.ex-log-badge.empty { background:var(--s3); color:var(--dim); }
+
+/* ── LOG MODAL ── */
+#log-modal {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+  display:none; align-items:flex-end; justify-content:center;
+}
+#log-modal.open { display:flex; }
+.modal-sheet {
+  width:100%; max-width:480px;
+  background:var(--s1); border-radius:12px 12px 0 0;
+  border-top:1px solid var(--border2);
+  padding:0 0 32px;
+  max-height:92vh; overflow-y:auto;
+}
+.modal-handle { width:36px; height:4px; background:var(--border2); border-radius:2px; margin:12px auto 0; }
+.modal-header { padding:16px 16px 12px; border-bottom:1px solid var(--border); }
+.modal-title { font-size:16px; font-weight:700; letter-spacing:-0.2px; }
+.modal-sub { font-size:11px; color:var(--muted); margin-top:3px; }
+.modal-close {
+  position:absolute; top:16px; right:16px;
+  background:var(--s3); border:none; color:var(--muted);
+  width:28px; height:28px; border-radius:50%;
+  font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+
+/* sets table inside modal */
+.sets-area { padding:12px 16px; }
+.sets-head {
+  display:grid; grid-template-columns:32px 1fr 1fr 1fr 28px;
+  gap:6px; padding:0 0 6px;
+  font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--dim);
+}
+.set-row {
+  display:grid; grid-template-columns:32px 1fr 1fr 1fr 28px;
+  gap:6px; align-items:center; padding:5px 0;
+  border-top:1px solid var(--border);
+}
+.set-num { font-size:12px; font-weight:600; color:var(--muted); text-align:center; }
+.set-input {
+  background:var(--s2); border:1px solid var(--border); border-radius:var(--radius);
+  color:var(--text); font-family:var(--font); font-size:13px; font-weight:500;
+  padding:7px 8px; width:100%; text-align:center;
+}
+.set-input::-webkit-inner-spin-button, .set-input::-webkit-outer-spin-button { -webkit-appearance:none; }
+.set-input:focus { outline:none; border-color:var(--accent); }
+.set-input.note-input { text-align:left; font-size:11px; font-weight:400; }
+.del-set-btn {
+  background:none; border:none; color:var(--dim); cursor:pointer;
+  font-size:16px; text-align:center; line-height:1; padding:0;
+  transition:color 0.15s;
+}
+.del-set-btn:hover { color:var(--red); }
+
+.add-set-btn {
+  display:flex; align-items:center; gap:6px; margin:8px 16px 0;
+  background:var(--s2); border:1px dashed var(--border2); border-radius:var(--radius);
+  color:var(--muted); font-family:var(--font); font-size:12px; font-weight:500;
+  padding:9px 12px; cursor:pointer; width:calc(100% - 32px);
+  transition:border-color 0.15s, color 0.15s;
+}
+.add-set-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+.prev-best { padding:4px 16px 12px; }
+.pb-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:4px; }
+.pb-value { font-size:13px; color:var(--muted); }
+.pb-value strong { color:var(--accent); }
+
+.save-btn {
+  margin:12px 16px 0;
+  width:calc(100% - 32px);
+  background:var(--accent); color:var(--bg);
+  border:none; border-radius:var(--radius);
+  font-family:var(--font); font-size:14px; font-weight:700;
+  padding:13px; cursor:pointer;
+  transition:opacity 0.15s;
+}
+.save-btn:hover { opacity:0.88; }
+.save-btn:active { opacity:0.75; }
+
+/* ── ROUTINE PAGE ── */
+.routine-day {
+  margin:0 16px 10px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--s1);
+}
+.rd-head {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; border-bottom:1px solid var(--border);
+  cursor:pointer; user-select:none;
+}
+.rd-day-pill {
+  font-size:10px; font-weight:700; letter-spacing:1px;
+  padding:3px 10px; background:var(--accent-dim); color:var(--accent);
+  border-radius:2px; flex-shrink:0;
+}
+.rd-title { font-size:13px; font-weight:600; flex:1; }
+.rd-chevron { color:var(--dim); transition:transform 0.2s; font-size:16px; margin-left:auto; }
+.routine-day.open .rd-chevron { transform:rotate(180deg); }
+.rd-exercises { display:none; }
+.routine-day.open .rd-exercises { display:block; }
+.rd-ex {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  padding:9px 14px; border-top:1px solid var(--border);
+  gap:12px;
+}
+.rd-ex-name { font-size:12.5px; font-weight:500; }
+.rd-ex-sr { font-size:11px; color:var(--accent); font-weight:600; white-space:nowrap; margin-top:1px; }
+.rd-ex-note { font-size:11px; color:var(--muted); margin-top:2px; font-style:italic; }
+
+/* ── HISTORY PAGE ── */
+.history-header { padding:20px 16px 12px; }
+.history-title { font-size:22px; font-weight:900; letter-spacing:-0.3px; }
+.history-empty { padding:48px 16px; text-align:center; color:var(--dim); font-size:13px; }
+
+.hist-session {
+  margin:0 16px 10px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--s1);
+}
+.hs-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 14px; border-bottom:1px solid var(--border);
+  cursor:pointer; user-select:none;
+}
+.hs-date { font-size:11px; color:var(--muted); }
+.hs-name { font-size:13px; font-weight:600; }
+.hs-chevron { color:var(--dim); transition:transform 0.2s; font-size:16px; }
+.hist-session.open .hs-chevron { transform:rotate(180deg); }
+.hs-body { display:none; }
+.hist-session.open .hs-body { display:block; }
+.hs-ex { padding:8px 14px; border-top:1px solid var(--border); }
+.hs-ex-name { font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px; }
+.hs-set { font-size:12px; color:var(--text); padding:2px 0; display:flex; gap:8px; align-items:baseline; }
+.hs-set-num { color:var(--dim); font-size:11px; width:28px; }
+.hs-note { font-size:11px; color:var(--dim); font-style:italic; }
+.del-session-btn {
+  background:none; border:none; color:var(--dim); cursor:pointer; font-size:12px;
+  padding:2px 6px; border-radius:var(--radius); transition:color 0.15s, background 0.15s;
+}
+.del-session-btn:hover { color:var(--red); background:var(--red-dim); }
+
+/* ── PROGRESS PAGE ── */
+.progress-header { padding:20px 16px 12px; }
+.progress-title { font-size:22px; font-weight:900; letter-spacing:-0.3px; }
+.ex-picker-wrap { padding:0 16px 12px; }
+.ex-picker {
+  width:100%; background:var(--s2); border:1px solid var(--border2);
+  border-radius:var(--radius); color:var(--text); font-family:var(--font);
+  font-size:13px; padding:10px 12px; cursor:pointer;
+}
+.ex-picker:focus { outline:none; border-color:var(--accent); }
+.progress-empty { padding:32px 16px; text-align:center; color:var(--dim); font-size:13px; }
+
+.chart-wrap { margin:0 16px 16px; background:var(--s1); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.chart-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:12px; }
+canvas#progressChart { width:100% !important; }
+
+.pr-stat-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin:0 16px 16px; }
+.pr-stat {
+  background:var(--s1); border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px; text-align:center;
+}
+.pr-stat-val { font-size:20px; font-weight:700; color:var(--accent); }
+.pr-stat-lbl { font-size:10px; color:var(--muted); margin-top:3px; letter-spacing:0.5px; }
+
+/* ── TOAST ── */
+#toast {
+  position:fixed; bottom:88px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--s3); border:1px solid var(--border2); border-radius:var(--radius);
+  padding:10px 18px; font-size:13px; font-weight:500; color:var(--text);
+  opacity:0; transition:all 0.25s; z-index:300; white-space:nowrap; pointer-events:none;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── UTIL ── */
+.section-eyebrow {
+  padding:16px 16px 8px;
+  font-size:10px; font-weight:600; letter-spacing:2px;
+  text-transform:uppercase; color:var(--dim);
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div id="topbar-title">Gym Tracker</div>
+    <div class="profile-toggle">
+      <button class="pt-btn active-luis" id="btn-luis" onclick="switchProfile('luis')">Luis</button>
+      <button class="pt-btn" id="btn-her" onclick="switchProfile('her')">Karla</button>
+    </div>
+  </div>
+
+  <!-- SCREEN -->
+  <div id="screen">
+
+    <!-- TODAY -->
+    <div class="page active" id="page-today">
+      <div class="today-header">
+        <div class="today-date" id="today-date-label"></div>
+        <div class="today-day" id="today-day-label"></div>
+      </div>
+      <div id="today-sessions"></div>
+    </div>
+
+    <!-- ROUTINE -->
+    <div class="page" id="page-routine">
+      <div class="section-eyebrow" id="routine-eyebrow">Full Routine</div>
+      <div id="routine-days"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="page-history">
+      <div class="history-header">
+        <div class="history-title">History</div>
+      </div>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="page" id="page-progress">
+      <div class="progress-header">
+        <div class="progress-title">Progress</div>
+      </div>
+      <div class="ex-picker-wrap">
+        <select class="ex-picker" id="progress-picker" onchange="renderProgress()"></select>
+      </div>
+      <div class="pr-stat-row" id="pr-stats"></div>
+      <div class="chart-wrap" id="chart-wrap" style="display:none">
+        <div class="chart-label">Best weight per session (kg)</div>
+        <canvas id="progressChart" height="160"></canvas>
+      </div>
+      <div class="progress-empty" id="progress-empty">No data logged yet for this exercise.</div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottomnav">
+    <button class="nav-btn active" onclick="showPage('today')" id="nav-today">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Today
+    </button>
+    <button class="nav-btn" onclick="showPage('routine')" id="nav-routine">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Routine
+    </button>
+    <button class="nav-btn" onclick="showPage('history')" id="nav-history">
+      <svg viewBox="0 0 24 24"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4.5"/><polyline points="3 3 3 9 9 9"/></svg>
+      History
+    </button>
+    <button class="nav-btn" onclick="showPage('progress')" id="nav-progress">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Progress
+    </button>
+  </div>
+
+</div>
+
+<!-- LOG MODAL -->
+<div id="log-modal" onclick="closeModalOutside(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header" style="position:relative">
+      <div class="modal-title" id="modal-ex-name"></div>
+      <div class="modal-sub" id="modal-ex-target"></div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="prev-best" id="prev-best-wrap">
+      <div class="pb-label">Previous best</div>
+      <div class="pb-value" id="prev-best-val">—</div>
+    </div>
+    <div class="sets-area">
+      <div class="sets-head">
+        <span>Set</span><span>kg</span><span>Reps</span><span>Note</span><span></span>
+      </div>
+      <div id="sets-container"></div>
+    </div>
+    <button class="add-set-btn" onclick="addSet()">+ Add set</button>
+    <button class="save-btn" onclick="saveSets()">Save sets</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────
+// DATA — ROUTINES
+// ─────────────────────────────────────────
+const ROUTINES = {
+  luis: [
+    {
+      day: 'Monday', label: 'Push', title: 'Chest · Shoulders · Triceps',
+      exercises: [
+        { name: 'Barbell Bench Press', target: '3 × 8', note: 'Main strength lift. Focus on chest squeeze.' },
+        { name: 'Incline DB Press', target: '3 × 10–12', note: 'Upper chest. Slow eccentric, feel the stretch.' },
+        { name: 'DB Flyes', target: '3 × 12', note: 'Pure chest isolation. No tricep involvement.' },
+        { name: 'Overhead Press (BB)', target: '3 × 8', note: 'Strict form, no leg drive.' },
+        { name: 'Cable Lateral Raise', target: '3 × 15', note: 'Light and controlled. Medial delt.' },
+        { name: 'Tricep Rope Pushdown', target: '3 × 12–15', note: 'Full extension at bottom.' },
+        { name: 'Overhead Tricep Extension', target: '2 × 12', note: 'Long head emphasis.' },
+      ]
+    },
+    {
+      day: 'Tuesday', label: 'Pull', title: 'Back · Biceps · Rear Delts',
+      exercises: [
+        { name: 'Deadlift', target: '4 × 4–5', note: 'Brace hard. Add weight weekly.' },
+        { name: 'Pendlay Row', target: '3 × 6–8', note: 'Chest to floor each rep. Explosive pull.' },
+        { name: 'Pull-ups / Lat Pulldown', target: '3 × 8–10', note: 'Weighted if you can do 10+ BW.' },
+        { name: 'Cable Seated Row', target: '3 × 12', note: 'Squeeze at contraction, slow return.' },
+        { name: 'Face Pulls', target: '3 × 15', note: 'Rear delt + rotator cuff health.' },
+        { name: 'Incline DB Curl', target: '3 × 10–12', note: '3-sec eccentric. Full stretch at bottom.' },
+        { name: 'Cross-body Hammer Curl', target: '3 × 12', note: 'Curl toward opposite shoulder. Brachialis focus. Slow eccentric.' },
+      ]
+    },
+    {
+      day: 'Wednesday', label: 'Legs', title: 'Quads · Hamstrings · Glutes · Calves',
+      exercises: [
+        { name: 'Back Squat', target: '4 × 5', note: 'Depth below parallel. Core tight.' },
+        { name: 'Romanian Deadlift', target: '3 × 10', note: 'Hip hinge. Feel the hamstring stretch.' },
+        { name: 'Leg Press', target: '3 × 12', note: 'Quad finisher.' },
+        { name: 'Walking Lunges (DB)', target: '3 × 10/leg', note: 'Full step, upright torso.' },
+        { name: 'Leg Curl (Machine)', target: '3 × 12–15', note: 'Isolated hamstring work.' },
+        { name: 'Standing Calf Raise', target: '4 × 15–20', note: 'Full stretch at bottom.' },
+      ]
+    },
+    {
+      day: 'Thursday', label: 'Upper', title: 'Upper Body Strength + Volume',
+      exercises: [
+        { name: 'Incline Barbell Press', target: '4 × 6–8', note: 'Slightly lighter than Monday bench.' },
+        { name: 'Chest-Supported DB Row', target: '4 × 10', note: 'Elbows 45°. Heavy is fine.' },
+        { name: 'DB Shoulder Press', target: '3 × 10', note: 'Full extension overhead.' },
+        { name: 'Cable Row (Wide Grip)', target: '3 × 12', note: 'Mid-back emphasis.' },
+        { name: 'Pec Deck / Cable Fly', target: '3 × 15', note: 'Last set to failure. Mind-muscle.' },
+        { name: 'Preacher EZ Bar Curl', target: '3 × 10', note: 'No swing possible. Full isolation. Slow eccentric.' },
+        { name: 'Reverse Curl (EZ Bar)', target: '2 × 12', note: 'Pronated grip. 3-sec eccentric. Direct brachialis stimulus.' },
+        { name: 'Skull Crushers', target: '3 × 10', note: 'EZ bar, lower to forehead slowly.' },
+      ]
+    },
+    {
+      day: 'Friday', label: 'Lower', title: 'Lower Body Volume + Posterior Chain',
+      exercises: [
+        { name: 'Front Squat / Goblet Squat', target: '4 × 8', note: 'Quad dominant. Upright torso.' },
+        { name: 'Hip Thrust (Barbell)', target: '4 × 10', note: 'Drive through heels. Best glute builder.' },
+        { name: 'Hack Squat / Leg Press', target: '3 × 12', note: 'Low foot for quad focus.' },
+        { name: 'Nordic Curl / Leg Curl', target: '3 × 8–12', note: 'Eccentric strength.' },
+        { name: 'Bulgarian Split Squat', target: '3 × 10/leg', note: 'Hard but excellent for growth.' },
+        { name: 'Seated Calf Raise', target: '4 × 15–20', note: 'Soleus focus.' },
+      ]
+    },
+  ],
+  her: [
+    {
+      day: 'Monday', label: 'Glutes', title: 'Glutes & Hamstrings — Heavy',
+      exercises: [
+        { name: 'Barbell Hip Thrust', target: '4 × 8–10', note: 'Drive through heels. Full lockout.' },
+        { name: 'Romanian Deadlift (DB)', target: '3 × 10', note: 'Hip hinge. Feel the hamstring stretch.' },
+        { name: 'Cable Kickback', target: '3 × 15/side', note: 'Hip extension only — no lower back.' },
+        { name: 'Lying Leg Curl (Machine)', target: '3 × 12', note: 'Slow eccentric.' },
+        { name: 'Hip Abduction Machine', target: '3 × 20', note: 'Glute med. Widens hip appearance.' },
+        { name: 'Standing Calf Raise', target: '3 × 15–20', note: 'Full stretch at bottom.' },
+      ]
+    },
+    {
+      day: 'Tuesday', label: 'Shoulders', title: 'Shoulders & Arms',
+      exercises: [
+        { name: 'DB Lateral Raise', target: '4 × 15', note: 'Slight forward lean. Lead with elbow.' },
+        { name: 'Cable Lateral Raise', target: '3 × 15/side', note: 'Constant tension. Alternate arms.' },
+        { name: 'DB Arnold Press (light)', target: '3 × 12', note: 'Moderate weight only.' },
+        { name: 'Rear Delt Cable Fly', target: '3 × 15', note: 'Arms parallel to floor. Posture.' },
+        { name: 'Incline DB Curl', target: '3 × 12', note: '3-sec eccentric. Long head stretch.' },
+        { name: 'Tricep Rope Pushdown', target: '3 × 12–15', note: 'Full extension.' },
+      ]
+    },
+    {
+      day: 'Wednesday', label: 'Glutes', title: 'Glutes & Quads — Volume',
+      exercises: [
+        { name: 'Bulgarian Split Squat (DB)', target: '4 × 10/leg', note: 'Lean forward to bias glutes.' },
+        { name: 'Sumo Squat (DB)', target: '3 × 12', note: 'Wide stance, toes out.' },
+        { name: 'Smith Machine Hip Thrust', target: '3 × 15', note: 'Lighter than Monday, higher reps.' },
+        { name: 'Leg Press (high foot)', target: '3 × 15', note: 'High foot = glutes + hamstrings.' },
+        { name: 'Hip Abduction (cable)', target: '3 × 20/side', note: 'Standing cable. Hip width.' },
+        { name: 'Seated Calf Raise', target: '3 × 20', note: 'Soleus. Different from Monday.' },
+      ]
+    },
+    {
+      day: 'Thursday', label: 'Core', title: 'Core, Waist & Chest Tone',
+      exercises: [
+        { name: 'Cable Oblique Crunch', target: '3 × 15/side', note: 'Lateral flexion. Defines waist.' },
+        { name: 'Dead Bug', target: '3 × 10/side', note: 'Lower back flat. Slow and controlled.' },
+        { name: 'Pallof Press', target: '3 × 12/side', note: 'Anti-rotation. Waist without bulk.' },
+        { name: 'Cable Fly (chest height)', target: '2 × 15', note: 'Very light. Pec tone only.' },
+        { name: 'Lateral Raise Drop Set', target: '2 × 15+10', note: 'Drop weight halfway through.' },
+        { name: 'Glute Bridge (BW)', target: '3 × 20', note: 'Active recovery. Squeeze hard at top.' },
+        { name: 'Hollow Body Hold', target: '3 × 30s', note: 'Back pressed into floor.' },
+      ]
+    },
+    {
+      day: 'Friday', label: 'Posterior', title: 'Posterior Chain Finisher',
+      exercises: [
+        { name: 'Hip Thrust (banded)', target: '4 × 12', note: 'Band above knees. Push out at top.' },
+        { name: 'Good Mornings (light)', target: '3 × 12', note: 'Hip hinge. Hamstring + lower glute.' },
+        { name: 'Step-up with Knee Drive (DB)', target: '3 × 12/leg', note: 'Drive through heel.' },
+        { name: 'Reverse Hyper / Back Extension', target: '3 × 15', note: "Don't hyperextend at top." },
+        { name: 'Hip Abduction Machine', target: '3 × 25', note: 'Lighter, higher reps. Final pump.' },
+        { name: 'Cable Lateral Raise', target: '2 × 15/side', note: 'End-of-week shoulder width work.' },
+      ]
+    },
+  ]
+};
+
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let currentProfile = 'luis';
+let currentPage = 'today';
+let modalExercise = null; // { dayIndex, exIndex, name, target }
+let pendingSets = []; // [{weight, reps, note}]
+let chartInstance = null;
+
+const STORAGE_KEY = 'gymtracker_v1';
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { luis: [], her: [] }; }
+  catch { return { luis: [], her: [] }; }
+}
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// ─────────────────────────────────────────
+// PROFILE
+// ─────────────────────────────────────────
+function switchProfile(p) {
+  currentProfile = p;
+  document.getElementById('app').className = p === 'her' ? 'profile-her' : '';
+  document.getElementById('btn-luis').className = 'pt-btn' + (p === 'luis' ? ' active-luis' : '');
+  document.getElementById('btn-her').className = 'pt-btn' + (p === 'her' ? ' active-her' : '');
+  refreshCurrentPage();
+}
+
+// ─────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────
+function showPage(name) {
+  currentPage = name;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  document.getElementById('screen').scrollTop = 0;
+  refreshCurrentPage();
+}
+
+function refreshCurrentPage() {
+  if (currentPage === 'today') renderToday();
+  if (currentPage === 'routine') renderRoutine();
+  if (currentPage === 'history') renderHistory();
+  if (currentPage === 'progress') { populateProgressPicker(); renderProgress(); }
+}
+
+// ─────────────────────────────────────────
+// TODAY
+// ─────────────────────────────────────────
+function getTodayDayIndex() {
+  const d = new Date().getDay(); // 0=Sun
+  // Mon=0 Tue=1 Wed=2 Thu=3 Fri=4, Sat/Sun = rest
+  if (d === 0 || d === 6) return -1;
+  return d - 1;
+}
+
+function renderToday() {
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  document.getElementById('today-date-label').textContent =
+    `${days[now.getDay() === 0 ? 6 : now.getDay()-1]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+  const dayIdx = getTodayDayIndex();
+  const routine = ROUTINES[currentProfile];
+  const container = document.getElementById('today-sessions');
+  container.innerHTML = '';
+
+  if (dayIdx === -1) {
+    const label = document.getElementById('today-day-label');
+    label.innerHTML = 'Rest <span>Day</span>';
+    container.innerHTML = `<div style="padding:32px 16px;text-align:center;color:var(--muted);font-size:13px;">Weekend — recover, eat, sleep. Back Monday.</div>`;
+    return;
+  }
+
+  const dayData = routine[dayIdx];
+  const label = document.getElementById('today-day-label');
+  label.innerHTML = `${dayData.label} <span>Day</span>`;
+
+  const data = loadData();
+  const todayStr = toDateStr(now);
+
+  const card = document.createElement('div');
+  card.className = 'session-card open';
+  card.innerHTML = `
+    <div class="session-card-head" onclick="toggleCard(this)">
+      <div class="sc-left">
+        <div class="sc-dot"></div>
+        <div>
+          <div class="sc-name">${dayData.title}</div>
+          <div class="sc-meta">${dayData.exercises.length} exercises</div>
+        </div>
+      </div>
+      <div class="sc-chevron">▾</div>
+    </div>
+    <div class="exercise-list" id="today-ex-list"></div>`;
+  container.appendChild(card);
+
+  const list = card.querySelector('#today-ex-list');
+  dayData.exercises.forEach((ex, ei) => {
+    const logged = getTodayLog(data, currentProfile, todayStr, dayIdx, ei);
+    const badge = logged
+      ? `<span class="ex-log-badge">${logged.sets.length} sets</span>`
+      : `<span class="ex-log-badge empty">Log</span>`;
+    const row = document.createElement('div');
+    row.className = 'ex-row';
+    row.innerHTML = `
+      <div class="ex-row-top">
+        <div class="ex-name">${ex.name}</div>
+        ${badge}
+      </div>
+      <div class="ex-target">${ex.target}</div>`;
+    row.onclick = () => openModal(dayIdx, ei, ex);
+    list.appendChild(row);
+  });
+}
+
+function getTodayLog(data, profile, dateStr, dayIdx, exIdx) {
+  const logs = data[profile] || [];
+  const session = logs.find(s => s.date === dateStr && s.dayIdx === dayIdx);
+  if (!session) return null;
+  return session.exercises.find(e => e.exIdx === exIdx) || null;
+}
+
+function toggleCard(head) {
+  head.closest('.session-card').classList.toggle('open');
+}
+
+// ─────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────
+function openModal(dayIdx, exIdx, ex) {
+  modalExercise = { dayIdx, exIdx, name: ex.name, target: ex.target };
+  document.getElementById('modal-ex-name').textContent = ex.name;
+  document.getElementById('modal-ex-target').textContent = ex.target + (ex.note ? '  ·  ' + ex.note : '');
+
+  // prev best
+  const data = loadData();
+  const best = getBestLog(data, currentProfile, ex.name);
+  document.getElementById('prev-best-val').innerHTML = best
+    ? `<strong>${best.weight}kg × ${best.reps}</strong>${best.note ? ' — ' + best.note : ''}`
+    : '—';
+
+  // pre-populate with today's existing sets if any
+  const todayStr = toDateStr(new Date());
+  const existing = getTodayLog(data, currentProfile, todayStr, dayIdx, exIdx);
+  pendingSets = existing ? existing.sets.map(s => ({...s})) : [{ weight:'', reps:'', note:'' }];
+
+  renderSets();
+  document.getElementById('log-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('log-modal').classList.remove('open');
+  modalExercise = null;
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('log-modal')) closeModal();
+}
+
+function renderSets() {
+  const container = document.getElementById('sets-container');
+  container.innerHTML = '';
+  pendingSets.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'set-row';
+    row.innerHTML = `
+      <div class="set-num">${i+1}</div>
+      <input class="set-input" type="number" placeholder="—" value="${s.weight}" min="0" step="0.5"
+        oninput="pendingSets[${i}].weight=this.value">
+      <input class="set-input" type="number" placeholder="—" value="${s.reps}" min="0" step="1"
+        oninput="pendingSets[${i}].reps=this.value">
+      <input class="set-input note-input" type="text" placeholder="note…" value="${s.note||''}"
+        oninput="pendingSets[${i}].note=this.value">
+      <button class="del-set-btn" onclick="removeSet(${i})">×</button>`;
+    container.appendChild(row);
+  });
+}
+
+function addSet() {
+  pendingSets.push({ weight:'', reps:'', note:'' });
+  renderSets();
+}
+
+function removeSet(i) {
+  if (pendingSets.length <= 1) return;
+  pendingSets.splice(i, 1);
+  renderSets();
+}
+
+function saveSets() {
+  if (!modalExercise) return;
+  const filled = pendingSets.filter(s => s.weight !== '' || s.reps !== '');
+  if (!filled.length) { showToast('Enter at least one set'); return; }
+
+  const data = loadData();
+  if (!data[currentProfile]) data[currentProfile] = [];
+  const todayStr = toDateStr(new Date());
+  const { dayIdx, exIdx } = modalExercise;
+
+  let session = data[currentProfile].find(s => s.date === todayStr && s.dayIdx === dayIdx);
+  if (!session) {
+    session = { date: todayStr, dayIdx, dayName: ROUTINES[currentProfile][dayIdx].day, exercises: [] };
+    data[currentProfile].unshift(session);
+  }
+
+  const exEntry = session.exercises.find(e => e.exIdx === exIdx);
+  if (exEntry) {
+    exEntry.sets = filled;
+    exEntry.name = modalExercise.name;
+  } else {
+    session.exercises.push({ exIdx, name: modalExercise.name, sets: filled });
+  }
+
+  saveData(data);
+  closeModal();
+  showToast(`Saved ${filled.length} set${filled.length>1?'s':''}`);
+  renderToday();
+}
+
+// ─────────────────────────────────────────
+// ROUTINE PAGE
+// ─────────────────────────────────────────
+function renderRoutine() {
+  const routine = ROUTINES[currentProfile];
+  document.getElementById('routine-eyebrow').textContent =
+    currentProfile === 'luis' ? 'Luis — 5-Day PPL Split' : 'Pau — 5-Day Figure Program';
+  const container = document.getElementById('routine-days');
+  container.innerHTML = '';
+  routine.forEach((day, di) => {
+    const block = document.createElement('div');
+    block.className = 'routine-day';
+    let exHTML = '';
+    day.exercises.forEach(ex => {
+      exHTML += `<div class="rd-ex">
+        <div>
+          <div class="rd-ex-name">${ex.name}</div>
+          <div class="rd-ex-note">${ex.note}</div>
+        </div>
+        <div class="rd-ex-sr">${ex.target}</div>
+      </div>`;
+    });
+    block.innerHTML = `
+      <div class="rd-head" onclick="this.closest('.routine-day').classList.toggle('open')">
+        <span class="rd-day-pill">${day.day.slice(0,3).toUpperCase()}</span>
+        <span class="rd-title">${day.title}</span>
+        <span class="rd-chevron">▾</span>
+      </div>
+      <div class="rd-exercises">${exHTML}</div>`;
+    container.appendChild(block);
+  });
+}
+
+// ─────────────────────────────────────────
+// HISTORY PAGE
+// ─────────────────────────────────────────
+function renderHistory() {
+  const data = loadData();
+  const sessions = (data[currentProfile] || []).slice().sort((a,b) => b.date.localeCompare(a.date));
+  const container = document.getElementById('history-list');
+  container.innerHTML = '';
+
+  if (!sessions.length) {
+    container.innerHTML = '<div class="history-empty">No sessions logged yet. Start today!</div>';
+    return;
+  }
+
+  sessions.forEach((session, si) => {
+    const block = document.createElement('div');
+    block.className = 'hist-session';
+    let exHTML = '';
+    (session.exercises || []).forEach(ex => {
+      let setsHTML = '';
+      (ex.sets || []).forEach((s, i) => {
+        setsHTML += `<div class="hs-set">
+          <span class="hs-set-num">S${i+1}</span>
+          <span>${s.weight ? s.weight+'kg' : '—'} × ${s.reps||'—'} reps</span>
+          ${s.note ? `<span class="hs-note">${s.note}</span>` : ''}
+        </div>`;
+      });
+      exHTML += `<div class="hs-ex"><div class="hs-ex-name">${ex.name}</div>${setsHTML}</div>`;
+    });
+
+    block.innerHTML = `
+      <div class="hs-head" onclick="this.closest('.hist-session').classList.toggle('open')">
+        <div>
+          <div class="hs-name">${session.dayName || 'Session'}</div>
+          <div class="hs-date">${formatDate(session.date)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="del-session-btn" onclick="deleteSession(event,'${currentProfile}','${session.date}',${session.dayIdx})">Delete</button>
+          <span class="hs-chevron">▾</span>
+        </div>
+      </div>
+      <div class="hs-body">${exHTML}</div>`;
+    container.appendChild(block);
+  });
+}
+
+function deleteSession(e, profile, date, dayIdx) {
+  e.stopPropagation();
+  if (!confirm('Delete this session?')) return;
+  const data = loadData();
+  data[profile] = (data[profile] || []).filter(s => !(s.date === date && s.dayIdx === dayIdx));
+  saveData(data);
+  renderHistory();
+  showToast('Session deleted');
+}
+
+// ─────────────────────────────────────────
+// PROGRESS PAGE
+// ─────────────────────────────────────────
+function populateProgressPicker() {
+  const picker = document.getElementById('progress-picker');
+  const current = picker.value;
+  const exercises = getAllExercises(currentProfile);
+  picker.innerHTML = exercises.map(e => `<option value="${e}">${e}</option>`).join('');
+  if (current && exercises.includes(current)) picker.value = current;
+}
+
+function getAllExercises(profile) {
+  const set = new Set();
+  ROUTINES[profile].forEach(day => day.exercises.forEach(ex => set.add(ex.name)));
+  return [...set];
+}
+
+function getBestLog(data, profile, exName) {
+  let best = null;
+  (data[profile] || []).forEach(session => {
+    (session.exercises || []).forEach(ex => {
+      if (ex.name !== exName) return;
+      (ex.sets || []).forEach(s => {
+        const w = parseFloat(s.weight) || 0;
+        if (!best || w > parseFloat(best.weight)) best = s;
+      });
+    });
+  });
+  return best;
+}
+
+function renderProgress() {
+  const picker = document.getElementById('progress-picker');
+  const exName = picker.value;
+  if (!exName) return;
+
+  const data = loadData();
+  const sessions = (data[currentProfile] || []).slice().sort((a,b) => a.date.localeCompare(b.date));
+
+  // build chart data: best weight per session where this exercise was logged
+  const points = [];
+  let totalSets = 0, totalVol = 0, maxWeight = 0;
+
+  sessions.forEach(session => {
+    const ex = (session.exercises || []).find(e => e.name === exName);
+    if (!ex) return;
+    let best = 0;
+    (ex.sets || []).forEach(s => {
+      const w = parseFloat(s.weight) || 0;
+      const r = parseInt(s.reps) || 0;
+      if (w > best) best = w;
+      if (w > maxWeight) maxWeight = w;
+      totalSets++;
+      totalVol += w * r;
+    });
+    if (best > 0) points.push({ date: session.date, weight: best });
+  });
+
+  const statsEl = document.getElementById('pr-stats');
+  const chartWrap = document.getElementById('chart-wrap');
+  const emptyEl = document.getElementById('progress-empty');
+
+  if (!points.length && totalSets === 0) {
+    statsEl.innerHTML = '';
+    chartWrap.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+
+  statsEl.innerHTML = `
+    <div class="pr-stat"><div class="pr-stat-val">${maxWeight || '—'}<span style="font-size:12px;color:var(--muted)">kg</span></div><div class="pr-stat-lbl">Best weight</div></div>
+    <div class="pr-stat"><div class="pr-stat-val">${totalSets}</div><div class="pr-stat-lbl">Total sets</div></div>
+    <div class="pr-stat"><div class="pr-stat-val">${totalVol > 999 ? (totalVol/1000).toFixed(1)+'t' : totalVol}</div><div class="pr-stat-lbl">Total volume</div></div>`;
+
+  if (points.length < 2) {
+    chartWrap.style.display = 'none';
+    return;
+  }
+
+  chartWrap.style.display = 'block';
+  drawChart(points);
+}
+
+function drawChart(points) {
+  const canvas = document.getElementById('progressChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 340;
+  const H = 140;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+
+  const accent = currentProfile === 'luis' ? '#e8c547' : '#e06090';
+  const padL = 36, padR = 16, padT = 16, padB = 28;
+  const cW = W - padL - padR;
+  const cH = H - padT - padB;
+
+  const vals = points.map(p => p.weight);
+  const minV = Math.min(...vals) * 0.9;
+  const maxV = Math.max(...vals) * 1.05;
+  const range = maxV - minV || 1;
+
+  const toX = i => padL + (i / (points.length - 1)) * cW;
+  const toY = v => padT + cH - ((v - minV) / range) * cH;
+
+  // grid lines
+  ctx.strokeStyle = '#2e2e33';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (i / 4) * cH;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cW, y); ctx.stroke();
+    const val = (maxV - (i / 4) * range).toFixed(1);
+    ctx.fillStyle = '#4a4a55'; ctx.font = '10px Archivo'; ctx.textAlign = 'right';
+    ctx.fillText(val, padL - 4, y + 3);
+  }
+
+  // area fill
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(vals[0]));
+  points.forEach((p, i) => i > 0 && ctx.lineTo(toX(i), toY(vals[i])));
+  ctx.lineTo(toX(points.length-1), padT + cH);
+  ctx.lineTo(toX(0), padT + cH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + cH);
+  grad.addColorStop(0, accent + '30');
+  grad.addColorStop(1, accent + '00');
+  ctx.fillStyle = grad; ctx.fill();
+
+  // line
+  ctx.beginPath();
+  ctx.strokeStyle = accent; ctx.lineWidth = 2;
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(toX(i), toY(vals[i])) : ctx.lineTo(toX(i), toY(vals[i])));
+  ctx.stroke();
+
+  // dots
+  points.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(toX(i), toY(vals[i]), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = accent; ctx.fill();
+  });
+
+  // x labels (first + last + a few)
+  ctx.fillStyle = '#4a4a55'; ctx.font = '9px Archivo'; ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(points.length / 5));
+  points.forEach((p, i) => {
+    if (i === 0 || i === points.length - 1 || i % step === 0) {
+      ctx.fillText(formatDateShort(p.date), toX(i), H - 6);
+    }
+  });
+}
+
+// ─────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────
+function toDateStr(d) {
+  return d.toISOString().split('T')[0];
+}
+function formatDate(str) {
+  if (!str) return '';
+  const d = new Date(str + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+}
+function formatDateShort(str) {
+  if (!str) return '';
+  const d = new Date(str + 'T12:00:00');
+  return (d.getMonth()+1) + '/' + d.getDate();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+renderToday();
+</script>
+</body>
+</html>
