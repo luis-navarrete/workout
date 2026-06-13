@@ -175,6 +175,7 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
   background:var(--s2); border:1px solid var(--border); border-radius:var(--radius);
   color:var(--text); font-family:var(--font); font-size:13px; font-weight:500;
   padding:7px 8px; width:100%; text-align:center;
+  -moz-appearance:textfield;
 }
 .set-input::-webkit-inner-spin-button, .set-input::-webkit-outer-spin-button { -webkit-appearance:none; }
 .set-input:focus { outline:none; border-color:var(--accent); }
@@ -432,10 +433,10 @@ const ROUTINES = {
     {
       day: 'Monday', label: 'Push', title: 'Chest · Shoulders · Triceps',
       exercises: [
-        { name: 'Barbell Bench Press', target: '3 × 8', note: 'Main strength lift. Focus on chest squeeze.' },
+        { name: 'Barbell Bench Press', target: '4 × 5', note: 'Main strength lift. Add weight weekly.' },
         { name: 'Incline DB Press', target: '3 × 10–12', note: 'Upper chest. Slow eccentric, feel the stretch.' },
         { name: 'DB Flyes', target: '3 × 12', note: 'Pure chest isolation. No tricep involvement.' },
-        { name: 'Overhead Press (BB)', target: '3 × 8', note: 'Strict form, no leg drive.' },
+        { name: 'Overhead Press (BB)', target: '4 × 6', note: 'Strict form, no leg drive. Strength focus.' },
         { name: 'Cable Lateral Raise', target: '3 × 15', note: 'Light and controlled. Medial delt.' },
         { name: 'Tricep Rope Pushdown', target: '3 × 12–15', note: 'Full extension at bottom.' },
         { name: 'Overhead Tricep Extension', target: '2 × 12', note: 'Long head emphasis.' },
@@ -448,7 +449,7 @@ const ROUTINES = {
         { name: 'Pendlay Row', target: '3 × 6–8', note: 'Chest to floor each rep. Explosive pull.' },
         { name: 'Pull-ups / Lat Pulldown', target: '3 × 8–10', note: 'Weighted if you can do 10+ BW.' },
         { name: 'Cable Seated Row', target: '3 × 12', note: 'Squeeze at contraction, slow return.' },
-        { name: 'Face Pulls', target: '3 × 15', note: 'Rear delt + rotator cuff health.' },
+        { name: 'Cable Rear Delt Fly', target: '3 × 12–15', note: 'Arms parallel to floor. Isolation, light weight.' },
         { name: 'Incline DB Curl', target: '3 × 10–12', note: '3-sec eccentric. Full stretch at bottom.' },
         { name: 'Cross-body Hammer Curl', target: '3 × 12', note: 'Curl toward opposite shoulder. Brachialis focus. Slow eccentric.' },
       ]
@@ -462,6 +463,8 @@ const ROUTINES = {
         { name: 'Walking Lunges (DB)', target: '3 × 10/leg', note: 'Full step, upright torso.' },
         { name: 'Leg Curl (Machine)', target: '3 × 12–15', note: 'Isolated hamstring work.' },
         { name: 'Standing Calf Raise', target: '4 × 15–20', note: 'Full stretch at bottom.' },
+        { name: 'Dead Bug', target: '3 × 10/side', note: 'Lower back flat. Slow and controlled.' },
+        { name: 'Hollow Body Hold', target: '3 × 30s', note: 'Back pressed into floor. Breathe steady.' },
       ]
     },
     {
@@ -473,19 +476,23 @@ const ROUTINES = {
         { name: 'Cable Row (Wide Grip)', target: '3 × 12', note: 'Mid-back emphasis.' },
         { name: 'Pec Deck / Cable Fly', target: '3 × 15', note: 'Last set to failure. Mind-muscle.' },
         { name: 'Preacher EZ Bar Curl', target: '3 × 10', note: 'No swing possible. Full isolation. Slow eccentric.' },
-        { name: 'Reverse Curl (EZ Bar)', target: '2 × 12', note: 'Pronated grip. 3-sec eccentric. Direct brachialis stimulus.' },
+        { name: 'Reverse Curl (EZ Bar)', target: '2 × 12–15', note: 'Pronated grip. 3-sec eccentric. Direct brachialis stimulus.' },
         { name: 'Skull Crushers', target: '3 × 10', note: 'EZ bar, lower to forehead slowly.' },
+        { name: 'Cable Lateral Raise', target: '3 × 15', note: 'Constant tension. Second shoulder hit of the week.' },
+        { name: 'Bent-over DB Rear Delt Fly', target: '3 × 12–15', note: 'Torso parallel to floor. Light DB. Squeeze at top.' },
       ]
     },
     {
       day: 'Friday', label: 'Lower', title: 'Lower Body Volume + Posterior Chain',
       exercises: [
-        { name: 'Front Squat / Goblet Squat', target: '4 × 8', note: 'Quad dominant. Upright torso.' },
         { name: 'Hip Thrust (Barbell)', target: '4 × 10', note: 'Drive through heels. Best glute builder.' },
-        { name: 'Hack Squat / Leg Press', target: '3 × 12', note: 'Low foot for quad focus.' },
         { name: 'Nordic Curl / Leg Curl', target: '3 × 8–12', note: 'Eccentric strength.' },
         { name: 'Bulgarian Split Squat', target: '3 × 10/leg', note: 'Hard but excellent for growth.' },
+        { name: 'Hack Squat / Leg Press', target: '3 × 12', note: 'Low foot for quad focus.' },
         { name: 'Seated Calf Raise', target: '4 × 15–20', note: 'Soleus focus.' },
+        { name: 'DB Overhead Press', target: '3 × 10', note: 'Unilateral stability. Second shoulder session.' },
+        { name: 'Plank', target: '3 × 45s', note: 'Full body tension. Don\'t let hips drop.' },
+        { name: 'Cable Oblique Crunch', target: '3 × 15/side', note: 'Lateral flexion. Waist definition.' },
       ]
     },
   ],
@@ -499,17 +506,19 @@ const ROUTINES = {
         { name: 'Lying Leg Curl (Machine)', target: '3 × 12', note: 'Slow eccentric.' },
         { name: 'Hip Abduction Machine', target: '3 × 20', note: 'Glute med. Widens hip appearance.' },
         { name: 'Standing Calf Raise', target: '3 × 15–20', note: 'Full stretch at bottom.' },
+        { name: 'Pallof Press', target: '3 × 12/side', note: 'Anti-rotation. Core stability.' },
+        { name: 'Hollow Body Hold', target: '3 × 30s', note: 'Back pressed into floor. Breathe steady.' },
       ]
     },
     {
-      day: 'Tuesday', label: 'Shoulders', title: 'Shoulders & Arms',
+      day: 'Tuesday', label: 'Shoulders', title: 'Shoulders, Arms & Upper Body',
       exercises: [
-        { name: 'DB Lateral Raise', target: '4 × 15', note: 'Slight forward lean. Lead with elbow.' },
-        { name: 'Cable Lateral Raise', target: '3 × 15/side', note: 'Constant tension. Alternate arms.' },
-        { name: 'DB Arnold Press (light)', target: '3 × 12', note: 'Moderate weight only.' },
-        { name: 'Rear Delt Cable Fly', target: '3 × 15', note: 'Arms parallel to floor. Posture.' },
-        { name: 'Incline DB Curl', target: '3 × 12', note: '3-sec eccentric. Long head stretch.' },
-        { name: 'Tricep Rope Pushdown', target: '3 × 12–15', note: 'Full extension.' },
+        { name: 'DB Lateral Raise', target: '4 × 15', note: 'Slight forward lean. Lead with elbow. Light weight.' },
+        { name: 'Arnold Press (light)', target: '3 × 12', note: 'Moderate weight only. Full rotation.' },
+        { name: 'Bent-over DB Rear Delt Fly', target: '3 × 12', note: 'Torso parallel to floor. Light DB. Squeeze at top.' },
+        { name: 'Cable Fly (chest height)', target: '2 × 12', note: 'Light weight. Pec tone only.' },
+        { name: 'Incline DB Curl', target: '3 × 12', note: '3-sec eccentric. Long head stretch at bottom.' },
+        { name: 'Tricep Rope Pushdown', target: '3 × 12', note: 'Full extension at bottom.' },
       ]
     },
     {
@@ -521,18 +530,20 @@ const ROUTINES = {
         { name: 'Leg Press (high foot)', target: '3 × 15', note: 'High foot = glutes + hamstrings.' },
         { name: 'Hip Abduction (cable)', target: '3 × 20/side', note: 'Standing cable. Hip width.' },
         { name: 'Seated Calf Raise', target: '3 × 20', note: 'Soleus. Different from Monday.' },
+        { name: 'Cable Oblique Crunch', target: '3 × 15/side', note: 'Lateral flexion. Defines waist.' },
+        { name: 'Dead Bug', target: '3 × 10/side', note: 'Lower back flat on floor. Slow and controlled.' },
       ]
     },
     {
-      day: 'Thursday', label: 'Core', title: 'Core, Waist & Chest Tone',
+      day: 'Thursday', label: 'Upper', title: 'Upper Body — Second Hit',
       exercises: [
-        { name: 'Cable Oblique Crunch', target: '3 × 15/side', note: 'Lateral flexion. Defines waist.' },
-        { name: 'Dead Bug', target: '3 × 10/side', note: 'Lower back flat. Slow and controlled.' },
-        { name: 'Pallof Press', target: '3 × 12/side', note: 'Anti-rotation. Waist without bulk.' },
-        { name: 'Cable Fly (chest height)', target: '2 × 15', note: 'Very light. Pec tone only.' },
-        { name: 'Lateral Raise Drop Set', target: '2 × 15+10', note: 'Drop weight halfway through.' },
-        { name: 'Glute Bridge (BW)', target: '3 × 20', note: 'Active recovery. Squeeze hard at top.' },
-        { name: 'Hollow Body Hold', target: '3 × 30s', note: 'Back pressed into floor.' },
+        { name: 'DB Lateral Raise', target: '3 × 15', note: 'Second hit of the week. Light, controlled.' },
+        { name: 'DB Shoulder Press', target: '3 × 12', note: 'Moderate weight. Full extension.' },
+        { name: 'Bent-over DB Rear Delt Fly', target: '3 × 12', note: 'Torso parallel. Light DB. Posture benefit.' },
+        { name: 'Cable Fly (chest height)', target: '2 × 12', note: 'Very light. Pec tone only.' },
+        { name: 'Cable Row (narrow grip, light)', target: '3 × 12', note: 'Mid-back and posture. Not lats.' },
+        { name: 'Incline DB Curl', target: '2 × 12', note: 'Second bicep hit. Slow eccentric.' },
+        { name: 'Tricep Overhead Extension', target: '3 × 12', note: 'Long head emphasis. Light weight.' },
       ]
     },
     {
@@ -543,7 +554,8 @@ const ROUTINES = {
         { name: 'Step-up with Knee Drive (DB)', target: '3 × 12/leg', note: 'Drive through heel.' },
         { name: 'Reverse Hyper / Back Extension', target: '3 × 15', note: "Don't hyperextend at top." },
         { name: 'Hip Abduction Machine', target: '3 × 25', note: 'Lighter, higher reps. Final pump.' },
-        { name: 'Cable Lateral Raise', target: '2 × 15/side', note: 'End-of-week shoulder width work.' },
+        { name: 'Dead Bug', target: '3 × 10/side', note: 'Core stability. Lower back flat throughout.' },
+        { name: 'Plank', target: '3 × 45s', note: 'Full body tension. Don\'t let hips drop.' },
       ]
     },
   ]
