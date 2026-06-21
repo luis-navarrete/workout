@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Gym Tracker</title>
+<meta name="description" content="Personal gym workout tracker">
+<meta name="theme-color" content="#0e0e0f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;900&family=Archivo+Narrow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -26,6 +30,8 @@
   --green-dim: rgba(78,201,122,0.12);
   --red: #e05555;
   --red-dim: rgba(224,85,85,0.10);
+  --blue: #5090e0;
+  --blue-dim: rgba(80,144,224,0.12);
 
   --accent: var(--luis);
   --accent-dim: var(--luis-dim);
@@ -40,7 +46,17 @@
 html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font); font-size:14px; overscroll-behavior:none; }
 
 /* ── LAYOUT ── */
-#app { display:flex; flex-direction:column; height:100vh; max-width:480px; margin:0 auto; background:var(--bg); position:relative; overflow:hidden; }
+#app {
+  display:flex; flex-direction:column; height:100vh;
+  max-width:480px; margin:0 auto; background:var(--bg);
+  position:relative; overflow:hidden;
+}
+@media (min-width:768px) {
+  #app { max-width:600px; }
+}
+@media (min-width:1024px) {
+  #app { max-width:720px; }
+}
 #screen { flex:1; overflow-y:auto; overflow-x:hidden; padding-bottom:72px; }
 #screen::-webkit-scrollbar { width:3px; }
 #screen::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
@@ -70,6 +86,12 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
   width:100%; max-width:480px;
   background:var(--s1); border-top:1px solid var(--border);
   z-index:100;
+}
+@media (min-width:768px) {
+  #bottomnav { max-width:600px; }
+}
+@media (min-width:1024px) {
+  #bottomnav { max-width:720px; }
 }
 .nav-btn {
   flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -180,6 +202,7 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
 .set-input::-webkit-inner-spin-button, .set-input::-webkit-outer-spin-button { -webkit-appearance:none; }
 .set-input:focus { outline:none; border-color:var(--accent); }
 .set-input.note-input { text-align:left; font-size:11px; font-weight:400; }
+.set-input.invalid { border-color:var(--red); }
 .del-set-btn {
   background:none; border:none; color:var(--dim); cursor:pointer;
   font-size:16px; text-align:center; line-height:1; padding:0;
@@ -282,7 +305,7 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
 /* ── PROGRESS PAGE ── */
 .progress-header { padding:20px 16px 12px; }
 .progress-title { font-size:22px; font-weight:900; letter-spacing:-0.3px; }
-.ex-picker-wrap { padding:0 16px 12px; }
+.ex-picker-wrap { padding:0 16px 12px; position:relative; }
 .ex-picker {
   width:100%; background:var(--s2); border:1px solid var(--border2);
   border-radius:var(--radius); color:var(--text); font-family:var(--font);
@@ -290,6 +313,15 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
 }
 .ex-picker:focus { outline:none; border-color:var(--accent); }
 .progress-empty { padding:32px 16px; text-align:center; color:var(--dim); font-size:13px; }
+
+.ex-search-wrap { padding:0 16px 8px; }
+.ex-search {
+  width:100%; background:var(--s2); border:1px solid var(--border2);
+  border-radius:var(--radius); color:var(--text); font-family:var(--font);
+  font-size:12px; padding:8px 12px;
+}
+.ex-search:focus { outline:none; border-color:var(--accent); }
+.ex-search::placeholder { color:var(--dim); }
 
 .chart-wrap { margin:0 16px 16px; background:var(--s1); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
 .chart-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:12px; }
@@ -302,6 +334,58 @@ canvas#progressChart { width:100% !important; }
 }
 .pr-stat-val { font-size:20px; font-weight:700; color:var(--accent); }
 .pr-stat-lbl { font-size:10px; color:var(--muted); margin-top:3px; letter-spacing:0.5px; }
+
+.chart-single-point { padding:16px; text-align:center; color:var(--muted); font-size:12px; }
+
+/* ── SETTINGS PAGE ── */
+.settings-header { padding:20px 16px 12px; }
+.settings-title { font-size:22px; font-weight:900; letter-spacing:-0.3px; }
+.settings-section { padding:0 16px 20px; }
+.settings-section-title {
+  font-size:10px; font-weight:600; letter-spacing:2px;
+  text-transform:uppercase; color:var(--dim); padding:12px 0 8px;
+}
+.settings-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; margin-bottom:8px;
+  background:var(--s1); border:1px solid var(--border);
+  border-radius:var(--radius); cursor:pointer;
+  transition:background 0.15s;
+}
+.settings-item:hover { background:var(--s2); }
+.settings-item-left { display:flex; flex-direction:column; gap:2px; }
+.settings-item-label { font-size:13px; font-weight:600; }
+.settings-item-desc { font-size:11px; color:var(--muted); }
+.settings-item-icon {
+  color:var(--dim); font-size:16px; display:flex; align-items:center; gap:4px;
+}
+.settings-item-icon svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ── CONFIRM MODAL ── */
+#confirm-modal {
+  position:fixed; inset:0; z-index:250;
+  background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+  display:none; align-items:center; justify-content:center;
+}
+#confirm-modal.open { display:flex; }
+.confirm-sheet {
+  width:calc(100% - 48px); max-width:340px;
+  background:var(--s1); border-radius:8px;
+  border:1px solid var(--border2);
+  padding:24px;
+  text-align:center;
+}
+.confirm-title { font-size:15px; font-weight:700; margin-bottom:8px; }
+.confirm-msg { font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.4; }
+.confirm-actions { display:flex; gap:10px; }
+.confirm-btn {
+  flex:1; padding:11px; border:none; border-radius:var(--radius);
+  font-family:var(--font); font-size:13px; font-weight:600; cursor:pointer;
+  transition:opacity 0.15s;
+}
+.confirm-btn:hover { opacity:0.85; }
+.confirm-cancel { background:var(--s3); color:var(--text); }
+.confirm-danger { background:var(--red); color:#fff; }
 
 /* ── TOAST ── */
 #toast {
@@ -318,94 +402,183 @@ canvas#progressChart { width:100% !important; }
   font-size:10px; font-weight:600; letter-spacing:2px;
   text-transform:uppercase; color:var(--dim);
 }
+
+/* ── WEEKLY STATS ── */
+.weekly-stats {
+  margin:0 16px 16px;
+  background:var(--s1); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px;
+}
+.weekly-stats-title { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:10px; }
+.weekly-stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.ws-stat { text-align:center; }
+.ws-val { font-size:18px; font-weight:700; color:var(--accent); }
+.ws-lbl { font-size:10px; color:var(--muted); margin-top:2px; }
+
+.streak-bar {
+  margin:0 16px 12px;
+  background:var(--s1); border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px 14px;
+  display:flex; align-items:center; gap:12px;
+}
+.streak-val { font-size:22px; font-weight:900; color:var(--accent); }
+.streak-lbl { font-size:11px; color:var(--muted); }
+.streak-days { display:flex; gap:4px; margin-left:auto; }
+.streak-dot {
+  width:10px; height:10px; border-radius:50%;
+  background:var(--s3); border:1px solid var(--border);
+}
+.streak-dot.done { background:var(--accent); border-color:var(--accent); }
+
+/* ── FILE INPUT ── */
+.file-input-hidden { display:none; }
+
+/* ── ACCESSIBILITY ── */
+:focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+.sr-only {
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
 </style>
 </head>
 <body>
-<div id="app">
+<div id="app" role="application" aria-label="Gym Tracker">
 
   <!-- TOP BAR -->
-  <div id="topbar">
+  <header id="topbar" role="banner">
     <div id="topbar-title">Gym Tracker</div>
-    <div class="profile-toggle">
-      <button class="pt-btn active-luis" id="btn-luis" onclick="switchProfile('luis')">Luis</button>
-      <button class="pt-btn" id="btn-her" onclick="switchProfile('her')">Karla</button>
+    <div class="profile-toggle" role="radiogroup" aria-label="Profile selection">
+      <button class="pt-btn active-luis" id="btn-luis" onclick="switchProfile('luis')" role="radio" aria-checked="true">Luis</button>
+      <button class="pt-btn" id="btn-her" onclick="switchProfile('her')" role="radio" aria-checked="false">Karla</button>
     </div>
-  </div>
+  </header>
 
   <!-- SCREEN -->
-  <div id="screen">
+  <main id="screen" role="main">
 
     <!-- TODAY -->
-    <div class="page active" id="page-today">
+    <section class="page active" id="page-today" aria-label="Today's workout">
       <div class="today-header">
         <div class="today-date" id="today-date-label"></div>
         <div class="today-day" id="today-day-label"></div>
       </div>
+      <div id="today-streak"></div>
       <div id="today-sessions"></div>
-    </div>
+    </section>
 
     <!-- ROUTINE -->
-    <div class="page" id="page-routine">
+    <section class="page" id="page-routine" aria-label="Workout routine">
       <div class="section-eyebrow" id="routine-eyebrow">Full Routine</div>
       <div id="routine-days"></div>
-    </div>
+    </section>
 
     <!-- HISTORY -->
-    <div class="page" id="page-history">
+    <section class="page" id="page-history" aria-label="Workout history">
       <div class="history-header">
         <div class="history-title">History</div>
       </div>
+      <div id="history-weekly-stats"></div>
       <div id="history-list"></div>
-    </div>
+    </section>
 
     <!-- PROGRESS -->
-    <div class="page" id="page-progress">
+    <section class="page" id="page-progress" aria-label="Exercise progress">
       <div class="progress-header">
         <div class="progress-title">Progress</div>
       </div>
+      <div class="ex-search-wrap">
+        <input class="ex-search" type="text" id="progress-search" placeholder="Search exercises..." oninput="filterProgressPicker()" aria-label="Search exercises">
+      </div>
       <div class="ex-picker-wrap">
-        <select class="ex-picker" id="progress-picker" onchange="renderProgress()"></select>
+        <select class="ex-picker" id="progress-picker" onchange="renderProgress()" aria-label="Select exercise"></select>
       </div>
       <div class="pr-stat-row" id="pr-stats"></div>
       <div class="chart-wrap" id="chart-wrap" style="display:none">
         <div class="chart-label">Best weight per session (kg)</div>
-        <canvas id="progressChart" height="160"></canvas>
+        <canvas id="progressChart" height="160" role="img" aria-label="Weight progression chart"></canvas>
       </div>
       <div class="progress-empty" id="progress-empty">No data logged yet for this exercise.</div>
-    </div>
+    </section>
 
-  </div>
+    <!-- SETTINGS -->
+    <section class="page" id="page-settings" aria-label="Settings">
+      <div class="settings-header">
+        <div class="settings-title">Settings</div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Data Management</div>
+        <div class="settings-item" onclick="exportData()" role="button" tabindex="0" aria-label="Export data">
+          <div class="settings-item-left">
+            <div class="settings-item-label">Export Data</div>
+            <div class="settings-item-desc">Download all workout data as JSON</div>
+          </div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+        </div>
+        <div class="settings-item" onclick="triggerImport()" role="button" tabindex="0" aria-label="Import data">
+          <div class="settings-item-left">
+            <div class="settings-item-label">Import Data</div>
+            <div class="settings-item-desc">Restore from a JSON backup file</div>
+          </div>
+          <div class="settings-item-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+        </div>
+        <input type="file" id="import-file" class="file-input-hidden" accept=".json" onchange="importData(event)">
+
+        <div class="settings-section-title">Danger Zone</div>
+        <div class="settings-item" onclick="confirmClearData()" role="button" tabindex="0" aria-label="Clear all data">
+          <div class="settings-item-left">
+            <div class="settings-item-label" style="color:var(--red)">Clear All Data</div>
+            <div class="settings-item-desc">Permanently delete all workout history</div>
+          </div>
+          <div class="settings-item-icon" style="color:var(--red)">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
 
   <!-- BOTTOM NAV -->
-  <div id="bottomnav">
-    <button class="nav-btn active" onclick="showPage('today')" id="nav-today">
+  <nav id="bottomnav" role="navigation" aria-label="Main navigation">
+    <button class="nav-btn active" onclick="showPage('today')" id="nav-today" aria-label="Today" aria-current="page">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       Today
     </button>
-    <button class="nav-btn" onclick="showPage('routine')" id="nav-routine">
+    <button class="nav-btn" onclick="showPage('routine')" id="nav-routine" aria-label="Routine">
       <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       Routine
     </button>
-    <button class="nav-btn" onclick="showPage('history')" id="nav-history">
+    <button class="nav-btn" onclick="showPage('history')" id="nav-history" aria-label="History">
       <svg viewBox="0 0 24 24"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4.5"/><polyline points="3 3 3 9 9 9"/></svg>
       History
     </button>
-    <button class="nav-btn" onclick="showPage('progress')" id="nav-progress">
+    <button class="nav-btn" onclick="showPage('progress')" id="nav-progress" aria-label="Progress">
       <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       Progress
     </button>
-  </div>
+    <button class="nav-btn" onclick="showPage('settings')" id="nav-settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
 
 </div>
 
 <!-- LOG MODAL -->
-<div id="log-modal" onclick="closeModalOutside(event)">
+<div id="log-modal" onclick="closeModalOutside(event)" role="dialog" aria-modal="true" aria-label="Log exercise sets">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-header" style="position:relative">
       <div class="modal-title" id="modal-ex-name"></div>
       <div class="modal-sub" id="modal-ex-target"></div>
-      <button class="modal-close" onclick="closeModal()">×</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
     </div>
     <div class="prev-best" id="prev-best-wrap">
       <div class="pb-label">Previous best</div>
@@ -422,7 +595,19 @@ canvas#progressChart { width:100% !important; }
   </div>
 </div>
 
-<div id="toast"></div>
+<!-- CONFIRM MODAL -->
+<div id="confirm-modal" onclick="closeConfirmOutside(event)" role="dialog" aria-modal="true" aria-label="Confirmation">
+  <div class="confirm-sheet">
+    <div class="confirm-title" id="confirm-title"></div>
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-actions">
+      <button class="confirm-btn confirm-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="confirm-btn confirm-danger" id="confirm-action-btn" onclick="executeConfirm()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 // ─────────────────────────────────────────
@@ -566,9 +751,11 @@ const ROUTINES = {
 // ─────────────────────────────────────────
 let currentProfile = 'luis';
 let currentPage = 'today';
-let modalExercise = null; // { dayIndex, exIndex, name, target }
-let pendingSets = []; // [{weight, reps, note}]
+let modalExercise = null;
+let pendingSets = [];
 let chartInstance = null;
+let confirmCallback = null;
+let allExerciseNames = [];
 
 const STORAGE_KEY = 'gymtracker_v1';
 
@@ -588,6 +775,8 @@ function switchProfile(p) {
   document.getElementById('app').className = p === 'her' ? 'profile-her' : '';
   document.getElementById('btn-luis').className = 'pt-btn' + (p === 'luis' ? ' active-luis' : '');
   document.getElementById('btn-her').className = 'pt-btn' + (p === 'her' ? ' active-her' : '');
+  document.getElementById('btn-luis').setAttribute('aria-checked', p === 'luis');
+  document.getElementById('btn-her').setAttribute('aria-checked', p === 'her');
   refreshCurrentPage();
 }
 
@@ -597,9 +786,14 @@ function switchProfile(p) {
 function showPage(name) {
   currentPage = name;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.remove('active');
+    b.removeAttribute('aria-current');
+  });
   document.getElementById('page-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
+  const navBtn = document.getElementById('nav-' + name);
+  navBtn.classList.add('active');
+  navBtn.setAttribute('aria-current', 'page');
   document.getElementById('screen').scrollTop = 0;
   refreshCurrentPage();
 }
@@ -616,22 +810,25 @@ function refreshCurrentPage() {
 // ─────────────────────────────────────────
 function getTodayDayIndex() {
   const d = new Date().getDay(); // 0=Sun
-  // Mon=0 Tue=1 Wed=2 Thu=3 Fri=4, Sat/Sun = rest
   if (d === 0 || d === 6) return -1;
   return d - 1;
 }
 
 function renderToday() {
-  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...6=Sat
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
   document.getElementById('today-date-label').textContent =
-    `${days[now.getDay() === 0 ? 6 : now.getDay()-1]}, ${months[now.getMonth()]} ${now.getDate()}`;
+    `${dayNames[dayOfWeek]}, ${months[now.getMonth()]} ${now.getDate()}`;
 
   const dayIdx = getTodayDayIndex();
   const routine = ROUTINES[currentProfile];
   const container = document.getElementById('today-sessions');
   container.innerHTML = '';
+
+  renderStreak();
 
   if (dayIdx === -1) {
     const label = document.getElementById('today-day-label');
@@ -671,6 +868,9 @@ function renderToday() {
       : `<span class="ex-log-badge empty">Log</span>`;
     const row = document.createElement('div');
     row.className = 'ex-row';
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('aria-label', `Log ${ex.name}`);
     row.innerHTML = `
       <div class="ex-row-top">
         <div class="ex-name">${ex.name}</div>
@@ -678,8 +878,61 @@ function renderToday() {
       </div>
       <div class="ex-target">${ex.target}</div>`;
     row.onclick = () => openModal(dayIdx, ei, ex);
+    row.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(dayIdx, ei, ex); } };
     list.appendChild(row);
   });
+}
+
+function renderStreak() {
+  const data = loadData();
+  const sessions = data[currentProfile] || [];
+  const streakContainer = document.getElementById('today-streak');
+
+  const today = new Date();
+  const last7 = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = toDateStr(d);
+    const dayOfWeek = d.getDay();
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+    const hasSession = sessions.some(s => s.date === dateStr);
+    last7.push({ date: d, dateStr, isWeekday, hasSession });
+  }
+
+  let streak = 0;
+  const allDates = sessions.map(s => s.date).sort().reverse();
+  const checkDate = new Date(today);
+  while (true) {
+    const dow = checkDate.getDay();
+    if (dow === 0 || dow === 6) {
+      checkDate.setDate(checkDate.getDate() - 1);
+      continue;
+    }
+    const ds = toDateStr(checkDate);
+    if (allDates.includes(ds)) {
+      streak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  const dayLetters = ['S','M','T','W','T','F','S'];
+  const dotsHTML = last7.map(d => {
+    const done = d.hasSession ? 'done' : '';
+    const rest = !d.isWeekday ? 'style="opacity:0.3"' : '';
+    return `<div class="streak-dot ${done}" ${rest} title="${dayLetters[d.date.getDay()]}"></div>`;
+  }).join('');
+
+  streakContainer.innerHTML = `
+    <div class="streak-bar">
+      <div>
+        <div class="streak-val">${streak}</div>
+        <div class="streak-lbl">day streak</div>
+      </div>
+      <div class="streak-days">${dotsHTML}</div>
+    </div>`;
 }
 
 function getTodayLog(data, profile, dateStr, dayIdx, exIdx) {
@@ -701,14 +954,12 @@ function openModal(dayIdx, exIdx, ex) {
   document.getElementById('modal-ex-name').textContent = ex.name;
   document.getElementById('modal-ex-target').textContent = ex.target + (ex.note ? '  ·  ' + ex.note : '');
 
-  // prev best
   const data = loadData();
   const best = getBestLog(data, currentProfile, ex.name);
   document.getElementById('prev-best-val').innerHTML = best
     ? `<strong>${best.weight}kg × ${best.reps}</strong>${best.note ? ' — ' + best.note : ''}`
     : '—';
 
-  // pre-populate with today's existing sets if any
   const todayStr = toDateStr(new Date());
   const existing = getTodayLog(data, currentProfile, todayStr, dayIdx, exIdx);
   pendingSets = existing ? existing.sets.map(s => ({...s})) : [{ weight:'', reps:'', note:'' }];
@@ -735,14 +986,34 @@ function renderSets() {
     row.innerHTML = `
       <div class="set-num">${i+1}</div>
       <input class="set-input" type="number" placeholder="—" value="${s.weight}" min="0" step="0.5"
-        oninput="pendingSets[${i}].weight=this.value">
+        oninput="updateSet(${i},'weight',this)" aria-label="Set ${i+1} weight">
       <input class="set-input" type="number" placeholder="—" value="${s.reps}" min="0" step="1"
-        oninput="pendingSets[${i}].reps=this.value">
-      <input class="set-input note-input" type="text" placeholder="note…" value="${s.note||''}"
-        oninput="pendingSets[${i}].note=this.value">
-      <button class="del-set-btn" onclick="removeSet(${i})">×</button>`;
+        oninput="updateSet(${i},'reps',this)" aria-label="Set ${i+1} reps">
+      <input class="set-input note-input" type="text" placeholder="note…" value="${escapeAttr(s.note||'')}"
+        oninput="pendingSets[${i}].note=this.value" aria-label="Set ${i+1} note">
+      <button class="del-set-btn" onclick="removeSet(${i})" aria-label="Remove set ${i+1}">×</button>`;
     container.appendChild(row);
   });
+}
+
+function updateSet(index, field, input) {
+  const val = input.value;
+  if (val !== '' && (isNaN(parseFloat(val)) || parseFloat(val) < 0)) {
+    input.classList.add('invalid');
+  } else {
+    input.classList.remove('invalid');
+  }
+  pendingSets[index][field] = val;
+}
+
+function escapeAttr(str) {
+  return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 function addSet() {
@@ -756,10 +1027,41 @@ function removeSet(i) {
   renderSets();
 }
 
+function validateSets(sets) {
+  let valid = true;
+  const inputs = document.querySelectorAll('.set-input');
+  inputs.forEach(inp => inp.classList.remove('invalid'));
+
+  sets.forEach((s, i) => {
+    if (s.weight !== '' && (isNaN(parseFloat(s.weight)) || parseFloat(s.weight) < 0)) {
+      valid = false;
+      const row = document.querySelectorAll('.set-row')[i];
+      if (row) row.querySelectorAll('.set-input')[0].classList.add('invalid');
+    }
+    if (s.reps !== '' && (isNaN(parseInt(s.reps)) || parseInt(s.reps) < 0)) {
+      valid = false;
+      const row = document.querySelectorAll('.set-row')[i];
+      if (row) row.querySelectorAll('.set-input')[1].classList.add('invalid');
+    }
+  });
+  return valid;
+}
+
 function saveSets() {
   if (!modalExercise) return;
   const filled = pendingSets.filter(s => s.weight !== '' || s.reps !== '');
   if (!filled.length) { showToast('Enter at least one set'); return; }
+
+  if (!validateSets(filled)) {
+    showToast('Fix invalid values (no negatives)');
+    return;
+  }
+
+  const sanitized = filled.map(s => ({
+    weight: s.weight === '' ? '' : String(Math.max(0, parseFloat(s.weight) || 0)),
+    reps: s.reps === '' ? '' : String(Math.max(0, parseInt(s.reps) || 0)),
+    note: (s.note || '').trim()
+  }));
 
   const data = loadData();
   if (!data[currentProfile]) data[currentProfile] = [];
@@ -774,16 +1076,41 @@ function saveSets() {
 
   const exEntry = session.exercises.find(e => e.exIdx === exIdx);
   if (exEntry) {
-    exEntry.sets = filled;
+    exEntry.sets = sanitized;
     exEntry.name = modalExercise.name;
   } else {
-    session.exercises.push({ exIdx, name: modalExercise.name, sets: filled });
+    session.exercises.push({ exIdx, name: modalExercise.name, sets: sanitized });
   }
 
   saveData(data);
   closeModal();
-  showToast(`Saved ${filled.length} set${filled.length>1?'s':''}`);
+  showToast(`Saved ${sanitized.length} set${sanitized.length>1?'s':''}`);
   renderToday();
+}
+
+// ─────────────────────────────────────────
+// CONFIRM MODAL
+// ─────────────────────────────────────────
+function showConfirm(title, msg, actionLabel, callback) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-action-btn').textContent = actionLabel;
+  confirmCallback = callback;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  confirmCallback = null;
+}
+
+function closeConfirmOutside(e) {
+  if (e.target === document.getElementById('confirm-modal')) closeConfirm();
+}
+
+function executeConfirm() {
+  if (confirmCallback) confirmCallback();
+  closeConfirm();
 }
 
 // ─────────────────────────────────────────
@@ -792,7 +1119,7 @@ function saveSets() {
 function renderRoutine() {
   const routine = ROUTINES[currentProfile];
   document.getElementById('routine-eyebrow').textContent =
-    currentProfile === 'luis' ? 'Luis — 5-Day PPL Split' : 'Pau — 5-Day Figure Program';
+    currentProfile === 'luis' ? 'Luis — 5-Day PPL Split' : 'Karla — 5-Day Figure Program';
   const container = document.getElementById('routine-days');
   container.innerHTML = '';
   routine.forEach((day, di) => {
@@ -802,16 +1129,16 @@ function renderRoutine() {
     day.exercises.forEach(ex => {
       exHTML += `<div class="rd-ex">
         <div>
-          <div class="rd-ex-name">${ex.name}</div>
-          <div class="rd-ex-note">${ex.note}</div>
+          <div class="rd-ex-name">${escapeHtml(ex.name)}</div>
+          <div class="rd-ex-note">${escapeHtml(ex.note)}</div>
         </div>
-        <div class="rd-ex-sr">${ex.target}</div>
+        <div class="rd-ex-sr">${escapeHtml(ex.target)}</div>
       </div>`;
     });
     block.innerHTML = `
-      <div class="rd-head" onclick="this.closest('.routine-day').classList.toggle('open')">
+      <div class="rd-head" onclick="this.closest('.routine-day').classList.toggle('open')" role="button" tabindex="0" aria-expanded="false">
         <span class="rd-day-pill">${day.day.slice(0,3).toUpperCase()}</span>
-        <span class="rd-title">${day.title}</span>
+        <span class="rd-title">${escapeHtml(day.title)}</span>
         <span class="rd-chevron">▾</span>
       </div>
       <div class="rd-exercises">${exHTML}</div>`;
@@ -828,6 +1155,8 @@ function renderHistory() {
   const container = document.getElementById('history-list');
   container.innerHTML = '';
 
+  renderWeeklyStats(data);
+
   if (!sessions.length) {
     container.innerHTML = '<div class="history-empty">No sessions logged yet. Start today!</div>';
     return;
@@ -842,37 +1171,92 @@ function renderHistory() {
       (ex.sets || []).forEach((s, i) => {
         setsHTML += `<div class="hs-set">
           <span class="hs-set-num">S${i+1}</span>
-          <span>${s.weight ? s.weight+'kg' : '—'} × ${s.reps||'—'} reps</span>
-          ${s.note ? `<span class="hs-note">${s.note}</span>` : ''}
+          <span>${s.weight ? escapeHtml(s.weight)+'kg' : '—'} × ${s.reps ? escapeHtml(String(s.reps)) : '—'} reps</span>
+          ${s.note ? `<span class="hs-note">${escapeHtml(s.note)}</span>` : ''}
         </div>`;
       });
-      exHTML += `<div class="hs-ex"><div class="hs-ex-name">${ex.name}</div>${setsHTML}</div>`;
+      exHTML += `<div class="hs-ex"><div class="hs-ex-name">${escapeHtml(ex.name)}</div>${setsHTML}</div>`;
     });
+
+    const profileKey = currentProfile;
+    const sessionDate = session.date;
+    const sessionDayIdx = session.dayIdx;
 
     block.innerHTML = `
       <div class="hs-head" onclick="this.closest('.hist-session').classList.toggle('open')">
         <div>
-          <div class="hs-name">${session.dayName || 'Session'}</div>
+          <div class="hs-name">${escapeHtml(session.dayName || 'Session')}</div>
           <div class="hs-date">${formatDate(session.date)}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <button class="del-session-btn" onclick="deleteSession(event,'${currentProfile}','${session.date}',${session.dayIdx})">Delete</button>
+          <button class="del-session-btn" data-profile="${escapeAttr(profileKey)}" data-date="${escapeAttr(sessionDate)}" data-dayidx="${sessionDayIdx}" aria-label="Delete session">Delete</button>
           <span class="hs-chevron">▾</span>
         </div>
       </div>
       <div class="hs-body">${exHTML}</div>`;
+
+    block.querySelector('.del-session-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      const p = this.dataset.profile;
+      const d = this.dataset.date;
+      const di = parseInt(this.dataset.dayidx);
+      deleteSession(p, d, di);
+    });
+
     container.appendChild(block);
   });
 }
 
-function deleteSession(e, profile, date, dayIdx) {
-  e.stopPropagation();
-  if (!confirm('Delete this session?')) return;
-  const data = loadData();
-  data[profile] = (data[profile] || []).filter(s => !(s.date === date && s.dayIdx === dayIdx));
-  saveData(data);
-  renderHistory();
-  showToast('Session deleted');
+function renderWeeklyStats(data) {
+  const container = document.getElementById('history-weekly-stats');
+  const sessions = data[currentProfile] || [];
+
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay() + 1); // Monday
+  weekStart.setHours(0,0,0,0);
+  const weekStartStr = toDateStr(weekStart);
+
+  let weekSessions = 0;
+  let weekSets = 0;
+  let weekVolume = 0;
+
+  sessions.forEach(s => {
+    if (s.date >= weekStartStr) {
+      weekSessions++;
+      (s.exercises || []).forEach(ex => {
+        (ex.sets || []).forEach(set => {
+          weekSets++;
+          weekVolume += (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
+        });
+      });
+    }
+  });
+
+  container.innerHTML = `
+    <div class="weekly-stats">
+      <div class="weekly-stats-title">This Week</div>
+      <div class="weekly-stats-row">
+        <div class="ws-stat"><div class="ws-val">${weekSessions}</div><div class="ws-lbl">Sessions</div></div>
+        <div class="ws-stat"><div class="ws-val">${weekSets}</div><div class="ws-lbl">Total Sets</div></div>
+        <div class="ws-stat"><div class="ws-val">${weekVolume > 999 ? (weekVolume/1000).toFixed(1)+'t' : weekVolume+'kg'}</div><div class="ws-lbl">Volume</div></div>
+      </div>
+    </div>`;
+}
+
+function deleteSession(profile, date, dayIdx) {
+  showConfirm(
+    'Delete Session',
+    'This will permanently remove this workout session. This action cannot be undone.',
+    'Delete',
+    () => {
+      const data = loadData();
+      data[profile] = (data[profile] || []).filter(s => !(s.date === date && s.dayIdx === dayIdx));
+      saveData(data);
+      renderHistory();
+      showToast('Session deleted');
+    }
+  );
 }
 
 // ─────────────────────────────────────────
@@ -882,8 +1266,28 @@ function populateProgressPicker() {
   const picker = document.getElementById('progress-picker');
   const current = picker.value;
   const exercises = getAllExercises(currentProfile);
-  picker.innerHTML = exercises.map(e => `<option value="${e}">${e}</option>`).join('');
+  allExerciseNames = exercises;
+  picker.innerHTML = exercises.map(e => `<option value="${escapeAttr(e)}">${escapeHtml(e)}</option>`).join('');
   if (current && exercises.includes(current)) picker.value = current;
+  document.getElementById('progress-search').value = '';
+}
+
+function filterProgressPicker() {
+  const query = document.getElementById('progress-search').value.toLowerCase().trim();
+  const picker = document.getElementById('progress-picker');
+  const current = picker.value;
+  const filtered = query
+    ? allExerciseNames.filter(e => e.toLowerCase().includes(query))
+    : allExerciseNames;
+
+  picker.innerHTML = filtered.map(e => `<option value="${escapeAttr(e)}">${escapeHtml(e)}</option>`).join('');
+
+  if (filtered.includes(current)) {
+    picker.value = current;
+  } else if (filtered.length > 0) {
+    picker.value = filtered[0];
+    renderProgress();
+  }
 }
 
 function getAllExercises(profile) {
@@ -914,7 +1318,6 @@ function renderProgress() {
   const data = loadData();
   const sessions = (data[currentProfile] || []).slice().sort((a,b) => a.date.localeCompare(b.date));
 
-  // build chart data: best weight per session where this exercise was logged
   const points = [];
   let totalSets = 0, totalVol = 0, maxWeight = 0;
 
@@ -951,6 +1354,34 @@ function renderProgress() {
     <div class="pr-stat"><div class="pr-stat-val">${totalSets}</div><div class="pr-stat-lbl">Total sets</div></div>
     <div class="pr-stat"><div class="pr-stat-val">${totalVol > 999 ? (totalVol/1000).toFixed(1)+'t' : totalVol}</div><div class="pr-stat-lbl">Total volume</div></div>`;
 
+  if (points.length === 1) {
+    chartWrap.style.display = 'block';
+    const canvas = document.getElementById('progressChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth || 340;
+    const H = 140;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
+
+    const accent = currentProfile === 'luis' ? '#e8c547' : '#e06090';
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.arc(W / 2, H / 2 - 10, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#7a7a85';
+    ctx.font = '12px Archivo';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${points[0].weight}kg — ${formatDateShort(points[0].date)}`, W / 2, H / 2 + 16);
+
+    ctx.fillStyle = '#4a4a55';
+    ctx.font = '10px Archivo';
+    ctx.fillText('Log more sessions to see a trend', W / 2, H / 2 + 36);
+    return;
+  }
+
   if (points.length < 2) {
     chartWrap.style.display = 'none';
     return;
@@ -983,7 +1414,6 @@ function drawChart(points) {
   const toX = i => padL + (i / (points.length - 1)) * cW;
   const toY = v => padT + cH - ((v - minV) / range) * cH;
 
-  // grid lines
   ctx.strokeStyle = '#2e2e33';
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
@@ -994,7 +1424,6 @@ function drawChart(points) {
     ctx.fillText(val, padL - 4, y + 3);
   }
 
-  // area fill
   ctx.beginPath();
   ctx.moveTo(toX(0), toY(vals[0]));
   points.forEach((p, i) => i > 0 && ctx.lineTo(toX(i), toY(vals[i])));
@@ -1006,20 +1435,17 @@ function drawChart(points) {
   grad.addColorStop(1, accent + '00');
   ctx.fillStyle = grad; ctx.fill();
 
-  // line
   ctx.beginPath();
   ctx.strokeStyle = accent; ctx.lineWidth = 2;
   points.forEach((p, i) => i === 0 ? ctx.moveTo(toX(i), toY(vals[i])) : ctx.lineTo(toX(i), toY(vals[i])));
   ctx.stroke();
 
-  // dots
   points.forEach((p, i) => {
     ctx.beginPath();
     ctx.arc(toX(i), toY(vals[i]), 3.5, 0, Math.PI * 2);
     ctx.fillStyle = accent; ctx.fill();
   });
 
-  // x labels (first + last + a few)
   ctx.fillStyle = '#4a4a55'; ctx.font = '9px Archivo'; ctx.textAlign = 'center';
   const step = Math.max(1, Math.floor(points.length / 5));
   points.forEach((p, i) => {
@@ -1030,10 +1456,88 @@ function drawChart(points) {
 }
 
 // ─────────────────────────────────────────
+// EXPORT / IMPORT
+// ─────────────────────────────────────────
+function exportData() {
+  const data = loadData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `gymtracker-backup-${toDateStr(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Data exported');
+}
+
+function triggerImport() {
+  document.getElementById('import-file').click();
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+
+      if (!imported || typeof imported !== 'object') {
+        showToast('Invalid backup file');
+        return;
+      }
+
+      if (!Array.isArray(imported.luis) && !Array.isArray(imported.her)) {
+        showToast('Invalid backup format');
+        return;
+      }
+
+      showConfirm(
+        'Import Data',
+        'This will replace all current data with the imported backup. Make sure you have exported your current data first.',
+        'Import',
+        () => {
+          const safeData = {
+            luis: Array.isArray(imported.luis) ? imported.luis : [],
+            her: Array.isArray(imported.her) ? imported.her : []
+          };
+          saveData(safeData);
+          showToast('Data imported successfully');
+          refreshCurrentPage();
+        }
+      );
+    } catch {
+      showToast('Failed to read backup file');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function confirmClearData() {
+  showConfirm(
+    'Clear All Data',
+    'This will permanently delete ALL workout history for both profiles. This cannot be undone. Consider exporting your data first.',
+    'Clear Everything',
+    () => {
+      saveData({ luis: [], her: [] });
+      showToast('All data cleared');
+      refreshCurrentPage();
+    }
+  );
+}
+
+// ─────────────────────────────────────────
 // UTILS
 // ─────────────────────────────────────────
 function toDateStr(d) {
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 function formatDate(str) {
   if (!str) return '';
@@ -1051,6 +1555,37 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─────────────────────────────────────────
+// KEYBOARD NAVIGATION
+// ─────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (document.getElementById('confirm-modal').classList.contains('open')) {
+      closeConfirm();
+    } else if (document.getElementById('log-modal').classList.contains('open')) {
+      closeModal();
+    }
+  }
+});
+
+// ─────────────────────────────────────────
+// CANVAS RESIZE
+// ─────────────────────────────────────────
+window.addEventListener('resize', function() {
+  if (currentPage === 'progress') {
+    renderProgress();
+  }
+});
+
+// ─────────────────────────────────────────
+// SERVICE WORKER
+// ─────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
 }
 
 // ─────────────────────────────────────────
