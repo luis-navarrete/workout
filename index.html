@@ -183,13 +183,13 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
 /* sets table inside modal */
 .sets-area { padding:12px 16px; }
 .sets-head {
-  display:grid; grid-template-columns:32px 1fr 1fr 1fr 28px;
-  gap:6px; padding:0 0 6px;
+  display:grid; grid-template-columns:28px minmax(0,1.4fr) minmax(0,0.8fr) minmax(0,1fr) 24px;
+  gap:5px; padding:0 0 6px;
   font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--dim);
 }
 .set-row {
-  display:grid; grid-template-columns:32px 1fr 1fr 1fr 28px;
-  gap:6px; align-items:center; padding:5px 0;
+  display:grid; grid-template-columns:28px minmax(0,1.4fr) minmax(0,0.8fr) minmax(0,1fr) 24px;
+  gap:5px; align-items:center; padding:5px 0;
   border-top:1px solid var(--border);
 }
 .set-num { font-size:12px; font-weight:600; color:var(--muted); text-align:center; }
@@ -210,14 +210,83 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
 }
 .del-set-btn:hover { color:var(--red); }
 
+.weight-adjust {
+  display:flex; align-items:center; gap:0;
+}
+.weight-adjust input.set-input { border-radius:0; }
+.adj-btn {
+  background:var(--s3); border:1px solid var(--border); color:var(--muted);
+  font-family:var(--font); font-size:13px; font-weight:700;
+  width:28px; height:100%; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; flex-shrink:0;
+  transition:color 0.15s, background 0.15s;
+  padding:0; line-height:1;
+}
+.adj-btn:first-child { border-radius:var(--radius) 0 0 var(--radius); border-right:none; }
+.adj-btn:last-child { border-radius:0 var(--radius) var(--radius) 0; border-left:none; }
+.adj-btn:hover { color:var(--accent); background:var(--accent-dim); }
+.adj-btn:active { opacity:0.7; }
+
+.set-actions { display:flex; gap:6px; margin:8px 16px 0; }
 .add-set-btn {
-  display:flex; align-items:center; gap:6px; margin:8px 16px 0;
+  display:flex; align-items:center; gap:6px;
   background:var(--s2); border:1px dashed var(--border2); border-radius:var(--radius);
   color:var(--muted); font-family:var(--font); font-size:12px; font-weight:500;
-  padding:9px 12px; cursor:pointer; width:calc(100% - 32px);
+  padding:9px 12px; cursor:pointer; flex:1;
   transition:border-color 0.15s, color 0.15s;
 }
 .add-set-btn:hover { border-color:var(--accent); color:var(--accent); }
+.dup-set-btn {
+  display:flex; align-items:center; gap:6px;
+  background:var(--s2); border:1px dashed var(--border2); border-radius:var(--radius);
+  color:var(--muted); font-family:var(--font); font-size:12px; font-weight:500;
+  padding:9px 12px; cursor:pointer; flex:1;
+  transition:border-color 0.15s, color 0.15s;
+}
+.dup-set-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ── REST TIMER ── */
+#rest-timer {
+  position:fixed; bottom:72px; left:50%; transform:translateX(-50%);
+  width:100%; max-width:480px; z-index:150;
+  background:var(--s1); border-top:1px solid var(--border2);
+  padding:12px 16px; display:none;
+}
+@media (min-width:768px) {
+  #rest-timer { max-width:600px; }
+}
+@media (min-width:1024px) {
+  #rest-timer { max-width:720px; }
+}
+#rest-timer.active { display:block; }
+.rest-timer-inner {
+  display:flex; align-items:center; gap:12px;
+}
+.rest-display {
+  font-size:28px; font-weight:900; font-family:var(--font);
+  color:var(--accent); letter-spacing:-1px; min-width:72px; text-align:center;
+}
+.rest-label { font-size:11px; color:var(--muted); flex:1; }
+.rest-presets { display:flex; gap:6px; }
+.rest-preset-btn {
+  background:var(--s3); border:1px solid var(--border); border-radius:var(--radius);
+  color:var(--muted); font-family:var(--font); font-size:11px; font-weight:600;
+  padding:5px 10px; cursor:pointer; transition:all 0.15s;
+}
+.rest-preset-btn:hover { border-color:var(--accent); color:var(--accent); }
+.rest-preset-btn.active { border-color:var(--accent); color:var(--accent); background:var(--accent-dim); }
+.rest-dismiss-btn {
+  background:none; border:none; color:var(--dim); cursor:pointer;
+  font-size:18px; padding:4px; line-height:1; transition:color 0.15s;
+}
+.rest-dismiss-btn:hover { color:var(--text); }
+.rest-bar {
+  height:3px; background:var(--s3); border-radius:2px; margin-top:8px; overflow:hidden;
+}
+.rest-bar-fill {
+  height:100%; background:var(--accent); border-radius:2px;
+  transition:width 0.25s linear;
+}
 
 .prev-best { padding:4px 16px 12px; }
 .pb-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:4px; }
@@ -590,9 +659,27 @@ canvas#progressChart { width:100% !important; }
       </div>
       <div id="sets-container"></div>
     </div>
-    <button class="add-set-btn" onclick="addSet()">+ Add set</button>
+    <div class="set-actions">
+      <button class="add-set-btn" onclick="addSet()">+ Add set</button>
+      <button class="dup-set-btn" onclick="duplicateLastSet()">⧉ Copy last</button>
+    </div>
     <button class="save-btn" onclick="saveSets()">Save sets</button>
   </div>
+</div>
+
+<!-- REST TIMER -->
+<div id="rest-timer">
+  <div class="rest-timer-inner">
+    <div class="rest-display" id="rest-display">0:00</div>
+    <div class="rest-label">Rest timer</div>
+    <div class="rest-presets">
+      <button class="rest-preset-btn" onclick="startRest(90)">1:30</button>
+      <button class="rest-preset-btn" onclick="startRest(120)">2:00</button>
+      <button class="rest-preset-btn" onclick="startRest(180)">3:00</button>
+    </div>
+    <button class="rest-dismiss-btn" onclick="dismissRest()" aria-label="Dismiss timer">×</button>
+  </div>
+  <div class="rest-bar"><div class="rest-bar-fill" id="rest-bar-fill"></div></div>
 </div>
 
 <!-- CONFIRM MODAL -->
@@ -756,6 +843,9 @@ let pendingSets = [];
 let chartInstance = null;
 let confirmCallback = null;
 let allExerciseNames = [];
+let restTimerInterval = null;
+let restTimeLeft = 0;
+let restTotalTime = 0;
 
 const STORAGE_KEY = 'gymtracker_v1';
 
@@ -949,6 +1039,20 @@ function toggleCard(head) {
 // ─────────────────────────────────────────
 // MODAL
 // ─────────────────────────────────────────
+function getLastSessionSets(data, profile, exName) {
+  const sessions = (data[profile] || []).slice().sort((a,b) => b.date.localeCompare(a.date));
+  for (const session of sessions) {
+    const ex = (session.exercises || []).find(e => e.name === exName);
+    if (ex && ex.sets && ex.sets.length) return ex.sets;
+  }
+  return null;
+}
+
+function parseTargetSets(target) {
+  const m = target.match(/^(\d+)\s*[×x]/i);
+  return m ? parseInt(m[1]) : 0;
+}
+
 function openModal(dayIdx, exIdx, ex) {
   modalExercise = { dayIdx, exIdx, name: ex.name, target: ex.target };
   document.getElementById('modal-ex-name').textContent = ex.name;
@@ -962,7 +1066,18 @@ function openModal(dayIdx, exIdx, ex) {
 
   const todayStr = toDateStr(new Date());
   const existing = getTodayLog(data, currentProfile, todayStr, dayIdx, exIdx);
-  pendingSets = existing ? existing.sets.map(s => ({...s})) : [{ weight:'', reps:'', note:'' }];
+
+  if (existing) {
+    pendingSets = existing.sets.map(s => ({...s}));
+  } else {
+    const lastSets = getLastSessionSets(data, currentProfile, ex.name);
+    if (lastSets) {
+      pendingSets = lastSets.map(s => ({ weight: s.weight || '', reps: s.reps || '', note: '' }));
+    } else {
+      const numSets = parseTargetSets(ex.target) || 1;
+      pendingSets = Array.from({ length: numSets }, () => ({ weight: '', reps: '', note: '' }));
+    }
+  }
 
   renderSets();
   document.getElementById('log-modal').classList.add('open');
@@ -985,8 +1100,12 @@ function renderSets() {
     row.className = 'set-row';
     row.innerHTML = `
       <div class="set-num">${i+1}</div>
-      <input class="set-input" type="number" placeholder="—" value="${s.weight}" min="0" step="0.5"
-        oninput="updateSet(${i},'weight',this)" aria-label="Set ${i+1} weight">
+      <div class="weight-adjust">
+        <button class="adj-btn" onclick="adjustWeight(${i},-2.5)" aria-label="Decrease weight">−</button>
+        <input class="set-input" type="number" placeholder="—" value="${s.weight}" min="0" step="0.5"
+          oninput="updateSet(${i},'weight',this)" aria-label="Set ${i+1} weight">
+        <button class="adj-btn" onclick="adjustWeight(${i},2.5)" aria-label="Increase weight">+</button>
+      </div>
       <input class="set-input" type="number" placeholder="—" value="${s.reps}" min="0" step="1"
         oninput="updateSet(${i},'reps',this)" aria-label="Set ${i+1} reps">
       <input class="set-input note-input" type="text" placeholder="note…" value="${escapeAttr(s.note||'')}"
@@ -1016,8 +1135,22 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function adjustWeight(index, delta) {
+  const current = parseFloat(pendingSets[index].weight) || 0;
+  const newVal = Math.max(0, current + delta);
+  pendingSets[index].weight = String(newVal % 1 === 0 ? newVal : newVal.toFixed(1));
+  renderSets();
+}
+
 function addSet() {
   pendingSets.push({ weight:'', reps:'', note:'' });
+  renderSets();
+}
+
+function duplicateLastSet() {
+  if (!pendingSets.length) { addSet(); return; }
+  const last = pendingSets[pendingSets.length - 1];
+  pendingSets.push({ weight: last.weight, reps: last.reps, note: '' });
   renderSets();
 }
 
@@ -1086,6 +1219,63 @@ function saveSets() {
   closeModal();
   showToast(`Saved ${sanitized.length} set${sanitized.length>1?'s':''}`);
   renderToday();
+  showRestTimer();
+}
+
+// ─────────────────────────────────────────
+// REST TIMER
+// ─────────────────────────────────────────
+function showRestTimer() {
+  const el = document.getElementById('rest-timer');
+  el.classList.add('active');
+  document.getElementById('rest-display').textContent = '0:00';
+  document.getElementById('rest-bar-fill').style.width = '100%';
+  document.querySelectorAll('.rest-preset-btn').forEach(b => b.classList.remove('active'));
+  if (restTimerInterval) { clearInterval(restTimerInterval); restTimerInterval = null; }
+  restTimeLeft = 0;
+  restTotalTime = 0;
+}
+
+function startRest(seconds) {
+  if (restTimerInterval) clearInterval(restTimerInterval);
+  restTotalTime = seconds;
+  restTimeLeft = seconds;
+
+  document.querySelectorAll('.rest-preset-btn').forEach(b => {
+    const btnSec = parseRestPreset(b.textContent);
+    b.classList.toggle('active', btnSec === seconds);
+  });
+
+  updateRestDisplay();
+  restTimerInterval = setInterval(() => {
+    restTimeLeft--;
+    updateRestDisplay();
+    if (restTimeLeft <= 0) {
+      clearInterval(restTimerInterval);
+      restTimerInterval = null;
+      showToast('Rest complete!');
+      try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch {}
+      setTimeout(dismissRest, 2000);
+    }
+  }, 1000);
+}
+
+function parseRestPreset(text) {
+  const parts = text.trim().split(':');
+  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
+function updateRestDisplay() {
+  const m = Math.floor(restTimeLeft / 60);
+  const s = restTimeLeft % 60;
+  document.getElementById('rest-display').textContent = `${m}:${String(s).padStart(2,'0')}`;
+  const pct = restTotalTime > 0 ? (restTimeLeft / restTotalTime) * 100 : 0;
+  document.getElementById('rest-bar-fill').style.width = pct + '%';
+}
+
+function dismissRest() {
+  if (restTimerInterval) { clearInterval(restTimerInterval); restTimerInterval = null; }
+  document.getElementById('rest-timer').classList.remove('active');
 }
 
 // ─────────────────────────────────────────
