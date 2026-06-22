@@ -2,7 +2,7 @@
   "name": "Gym Tracker",
   "short_name": "GymTracker",
   "description": "Personal gym workout tracker",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0e0e0f",
   "theme_color": "#0e0e0f",
