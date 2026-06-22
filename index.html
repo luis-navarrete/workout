@@ -356,29 +356,71 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
 .rd-ex-note { font-size:11px; color:var(--muted); margin-top:2px; font-style:italic; }
 
 /* ── HISTORY PAGE ── */
-.history-header { padding:20px 16px 12px; }
+.history-header { padding:20px 16px 12px; display:flex; align-items:center; justify-content:space-between; }
 .history-title { font-size:22px; font-weight:900; letter-spacing:-0.3px; }
 .history-empty { padding:48px 16px; text-align:center; color:var(--dim); font-size:13px; }
 
-.hist-session {
-  margin:0 16px 10px;
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  overflow:hidden;
-  background:var(--s1);
+/* calendar */
+.cal-nav {
+  display:flex; align-items:center; gap:12px;
 }
-.hs-head {
+.cal-nav-btn {
+  background:none; border:none; color:var(--muted); cursor:pointer;
+  font-size:18px; padding:4px; line-height:1; transition:color 0.15s;
+}
+.cal-nav-btn:hover { color:var(--accent); }
+.cal-month {
+  font-size:13px; font-weight:600; min-width:110px; text-align:center;
+}
+.cal-grid {
+  margin:0 16px 12px;
+  background:var(--s1); border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px 10px;
+}
+.cal-weekdays {
+  display:grid; grid-template-columns:repeat(7, 1fr); gap:2px;
+  margin-bottom:6px;
+}
+.cal-wd {
+  text-align:center; font-size:10px; font-weight:600;
+  letter-spacing:0.5px; color:var(--dim); padding:4px 0;
+}
+.cal-days {
+  display:grid; grid-template-columns:repeat(7, 1fr); gap:2px;
+}
+.cal-day {
+  position:relative; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  aspect-ratio:1; border-radius:var(--radius); cursor:default;
+  font-size:12px; font-weight:500; color:var(--muted);
+  transition:background 0.15s;
+}
+.cal-day.empty { visibility:hidden; }
+.cal-day.has-session { color:var(--text); cursor:pointer; }
+.cal-day.has-session:hover { background:var(--s2); }
+.cal-day.selected { background:var(--accent-dim); color:var(--accent); font-weight:700; }
+.cal-day.today { border:1px solid var(--border2); }
+.cal-dot {
+  width:5px; height:5px; border-radius:50%;
+  background:var(--accent); position:absolute; bottom:3px;
+}
+.cal-day.rest-day { color:var(--dim); opacity:0.5; }
+
+/* selected day detail */
+.cal-detail {
+  margin:0 16px 12px;
+  border:1px solid var(--border); border-radius:var(--radius);
+  background:var(--s1); overflow:hidden;
+}
+.cal-detail-head {
   display:flex; align-items:center; justify-content:space-between;
-  padding:11px 14px; border-bottom:1px solid var(--border);
-  cursor:pointer; user-select:none;
+  padding:12px 14px; border-bottom:1px solid var(--border);
 }
-.hs-date { font-size:11px; color:var(--muted); }
-.hs-name { font-size:13px; font-weight:600; }
-.hs-chevron { color:var(--dim); transition:transform 0.2s; font-size:16px; }
-.hist-session.open .hs-chevron { transform:rotate(180deg); }
-.hs-body { display:none; }
-.hist-session.open .hs-body { display:block; }
+.cal-detail-title { font-size:13px; font-weight:600; }
+.cal-detail-date { font-size:11px; color:var(--muted); }
+.cal-detail-body { padding:0; }
 .hs-ex { padding:8px 14px; border-top:1px solid var(--border); }
+.hs-ex:first-child { border-top:none; }
 .hs-ex-name { font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px; }
 .hs-set { font-size:12px; color:var(--text); padding:2px 0; display:flex; gap:8px; align-items:baseline; }
 .hs-set-num { color:var(--dim); font-size:11px; width:28px; }
@@ -566,9 +608,15 @@ canvas#progressChart { width:100% !important; }
     <section class="page" id="page-history" aria-label="Workout history">
       <div class="history-header">
         <div class="history-title">History</div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="changeMonth(-1)" aria-label="Previous month">‹</button>
+          <div class="cal-month" id="cal-month-label"></div>
+          <button class="cal-nav-btn" onclick="changeMonth(1)" aria-label="Next month">›</button>
+        </div>
       </div>
       <div id="history-weekly-stats"></div>
-      <div id="history-list"></div>
+      <div id="cal-grid-wrap"></div>
+      <div id="cal-detail-wrap"></div>
     </section>
 
     <!-- PROGRESS -->
@@ -872,6 +920,9 @@ let restTimerInterval = null;
 let restTimeLeft = 0;
 let restTotalTime = 0;
 let currentUnit = 'kg';
+let calViewDate = new Date();
+let calSelectedDate = null;
+const profileModalState = { luis: null, her: null };
 const UNIT_STORAGE_KEY = 'gymtracker_units';
 
 function loadUnitPrefs() {
@@ -900,13 +951,53 @@ function saveData(data) {
 // PROFILE
 // ─────────────────────────────────────────
 function switchProfile(p) {
+  if (p === currentProfile) return;
+  const prev = currentProfile;
+
+  if (modalExercise) {
+    profileModalState[prev] = {
+      exercise: { ...modalExercise },
+      sets: pendingSets.map(s => ({ ...s })),
+      unit: currentUnit
+    };
+    document.getElementById('log-modal').classList.remove('open');
+  } else {
+    profileModalState[prev] = null;
+  }
+
   currentProfile = p;
+  calSelectedDate = null;
   document.getElementById('app').className = p === 'her' ? 'profile-her' : '';
   document.getElementById('btn-luis').className = 'pt-btn' + (p === 'luis' ? ' active-luis' : '');
   document.getElementById('btn-her').className = 'pt-btn' + (p === 'her' ? ' active-her' : '');
   document.getElementById('btn-luis').setAttribute('aria-checked', p === 'luis');
   document.getElementById('btn-her').setAttribute('aria-checked', p === 'her');
   refreshCurrentPage();
+
+  const saved = profileModalState[p];
+  if (saved) {
+    modalExercise = saved.exercise;
+    pendingSets = saved.sets;
+    currentUnit = saved.unit;
+    const ex = saved.exercise;
+    document.getElementById('modal-ex-name').textContent = ex.name;
+
+    const routine = ROUTINES[p];
+    const routineDay = routine[ex.dayIdx];
+    const routineEx = routineDay ? routineDay.exercises[ex.exIdx] : null;
+    const note = routineEx ? routineEx.note : '';
+    document.getElementById('modal-ex-target').textContent = ex.target + (note ? '  ·  ' + note : '');
+
+    syncUnitToggle();
+    const data = loadData();
+    const best = getBestLog(data, currentProfile, ex.name);
+    const u = currentUnit;
+    document.getElementById('prev-best-val').innerHTML = best
+      ? `<strong>${displayWeight(best.weight)}${u} × ${best.reps}</strong>${best.note ? ' — ' + best.note : ''}`
+      : '—';
+    renderSets();
+    document.getElementById('log-modal').classList.add('open');
+  }
 }
 
 // ─────────────────────────────────────────
@@ -1193,6 +1284,7 @@ function openModal(dayIdx, exIdx, ex) {
 function closeModal() {
   document.getElementById('log-modal').classList.remove('open');
   modalExercise = null;
+  profileModalState[currentProfile] = null;
 }
 
 function closeModalOutside(e) {
@@ -1446,63 +1538,135 @@ function renderRoutine() {
 }
 
 // ─────────────────────────────────────────
-// HISTORY PAGE
+// HISTORY PAGE (Calendar)
 // ─────────────────────────────────────────
 function renderHistory() {
   const data = loadData();
-  const sessions = (data[currentProfile] || []).slice().sort((a,b) => b.date.localeCompare(a.date));
-  const container = document.getElementById('history-list');
-  container.innerHTML = '';
-
   renderWeeklyStats(data);
+  renderCalendar(data);
+  renderCalendarDetail(data);
+}
 
-  if (!sessions.length) {
-    container.innerHTML = '<div class="history-empty">No sessions logged yet. Start today!</div>';
+function changeMonth(delta) {
+  calViewDate.setMonth(calViewDate.getMonth() + delta);
+  calSelectedDate = null;
+  const data = loadData();
+  renderCalendar(data);
+  renderCalendarDetail(data);
+}
+
+function selectCalDay(dateStr) {
+  calSelectedDate = calSelectedDate === dateStr ? null : dateStr;
+  const data = loadData();
+  renderCalendar(data);
+  renderCalendarDetail(data);
+}
+
+function renderCalendar(data) {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const year = calViewDate.getFullYear();
+  const month = calViewDate.getMonth();
+
+  document.getElementById('cal-month-label').textContent = `${months[month]} ${year}`;
+
+  const sessions = data[currentProfile] || [];
+  const sessionDates = new Set(sessions.map(s => s.date));
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = (firstDay.getDay() + 6) % 7; // Mon=0
+  const daysInMonth = lastDay.getDate();
+  const todayStr = toDateStr(new Date());
+
+  const container = document.getElementById('cal-grid-wrap');
+  let html = '<div class="cal-grid"><div class="cal-weekdays">';
+  ['M','T','W','T','F','S','S'].forEach(d => { html += `<div class="cal-wd">${d}</div>`; });
+  html += '</div><div class="cal-days">';
+
+  for (let i = 0; i < startDow; i++) {
+    html += '<div class="cal-day empty"></div>';
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, month, d);
+    const ds = toDateStr(dateObj);
+    const dow = dateObj.getDay();
+    const isWeekend = dow === 0 || dow === 6;
+    const hasSession = sessionDates.has(ds);
+    const isToday = ds === todayStr;
+    const isSelected = ds === calSelectedDate;
+
+    let cls = 'cal-day';
+    if (hasSession) cls += ' has-session';
+    if (isToday) cls += ' today';
+    if (isSelected) cls += ' selected';
+    if (isWeekend && !hasSession) cls += ' rest-day';
+
+    const dot = hasSession ? '<div class="cal-dot"></div>' : '';
+    const click = hasSession ? `onclick="selectCalDay('${ds}')"` : '';
+
+    html += `<div class="${cls}" ${click}>${d}${dot}</div>`;
+  }
+
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+function renderCalendarDetail(data) {
+  const container = document.getElementById('cal-detail-wrap');
+
+  if (!calSelectedDate) {
+    const sessions = data[currentProfile] || [];
+    if (!sessions.length) {
+      container.innerHTML = '<div class="history-empty">No sessions logged yet. Start today!</div>';
+    } else {
+      container.innerHTML = '<div class="history-empty" style="padding:24px 16px">Tap a highlighted day to see details.</div>';
+    }
     return;
   }
 
-  sessions.forEach((session, si) => {
-    const block = document.createElement('div');
-    block.className = 'hist-session';
+  const sessions = (data[currentProfile] || []).filter(s => s.date === calSelectedDate);
+  if (!sessions.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  sessions.forEach(session => {
     let exHTML = '';
     (session.exercises || []).forEach(ex => {
+      const u = getUnitForExercise(ex.name);
       let setsHTML = '';
       (ex.sets || []).forEach((s, i) => {
+        const wDisplay = s.weight ? (u === 'lb' ? escapeHtml(String(kgToLb(parseFloat(s.weight)))) + 'lb' : escapeHtml(s.weight) + 'kg') : '—';
         setsHTML += `<div class="hs-set">
           <span class="hs-set-num">S${i+1}</span>
-          <span>${s.weight ? escapeHtml(s.weight)+'kg' : '—'} × ${s.reps ? escapeHtml(String(s.reps)) : '—'} reps</span>
+          <span>${wDisplay} × ${s.reps ? escapeHtml(String(s.reps)) : '—'} reps</span>
           ${s.note ? `<span class="hs-note">${escapeHtml(s.note)}</span>` : ''}
         </div>`;
       });
       exHTML += `<div class="hs-ex"><div class="hs-ex-name">${escapeHtml(ex.name)}</div>${setsHTML}</div>`;
     });
 
-    const profileKey = currentProfile;
-    const sessionDate = session.date;
-    const sessionDayIdx = session.dayIdx;
-
-    block.innerHTML = `
-      <div class="hs-head" onclick="this.closest('.hist-session').classList.toggle('open')">
+    html += `<div class="cal-detail">
+      <div class="cal-detail-head">
         <div>
-          <div class="hs-name">${escapeHtml(session.dayName || 'Session')}</div>
-          <div class="hs-date">${formatDate(session.date)}</div>
+          <div class="cal-detail-title">${escapeHtml(session.dayName || 'Session')}</div>
+          <div class="cal-detail-date">${formatDate(session.date)}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="del-session-btn" data-profile="${escapeAttr(profileKey)}" data-date="${escapeAttr(sessionDate)}" data-dayidx="${sessionDayIdx}" aria-label="Delete session">Delete</button>
-          <span class="hs-chevron">▾</span>
-        </div>
+        <button class="del-session-btn" data-profile="${escapeAttr(currentProfile)}" data-date="${escapeAttr(session.date)}" data-dayidx="${session.dayIdx}" aria-label="Delete session">Delete</button>
       </div>
-      <div class="hs-body">${exHTML}</div>`;
+      <div class="cal-detail-body">${exHTML}</div>
+    </div>`;
+  });
 
-    block.querySelector('.del-session-btn').addEventListener('click', function(e) {
+  container.innerHTML = html;
+
+  container.querySelectorAll('.del-session-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      const p = this.dataset.profile;
-      const d = this.dataset.date;
-      const di = parseInt(this.dataset.dayidx);
-      deleteSession(p, d, di);
+      deleteSession(this.dataset.profile, this.dataset.date, parseInt(this.dataset.dayidx));
     });
-
-    container.appendChild(block);
   });
 }
 
@@ -1512,7 +1676,7 @@ function renderWeeklyStats(data) {
 
   const now = new Date();
   const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay() + 1); // Monday
+  weekStart.setDate(now.getDate() - now.getDay() + 1);
   weekStart.setHours(0,0,0,0);
   const weekStartStr = toDateStr(weekStart);
 
