@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Gym Tracker</title>
 <meta name="description" content="Personal gym workout tracker">
 <meta name="theme-color" content="#0e0e0f">
@@ -57,7 +57,7 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
 @media (min-width:1024px) {
   #app { max-width:720px; }
 }
-#screen { flex:1; overflow-y:auto; overflow-x:hidden; padding-bottom:72px; }
+#screen { flex:1; overflow-y:auto; overflow-x:hidden; padding-bottom:calc(72px + env(safe-area-inset-bottom, 8px)); }
 #screen::-webkit-scrollbar { width:3px; }
 #screen::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
 
@@ -85,6 +85,7 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
   display:flex; position:fixed; bottom:0; left:50%; transform:translateX(-50%);
   width:100%; max-width:480px;
   background:var(--s1); border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom, 8px);
   z-index:100;
 }
 @media (min-width:768px) {
@@ -466,6 +467,60 @@ canvas#progressChart { width:100% !important; }
 
 .chart-single-point { padding:16px; text-align:center; color:var(--muted); font-size:12px; }
 
+/* ── PROGRESS SUB-TABS ── */
+.progress-tabs {
+  display:flex; margin:0 16px 12px; background:var(--s2); border-radius:var(--radius);
+  border:1px solid var(--border); overflow:hidden;
+}
+.progress-tab {
+  flex:1; padding:9px 0; text-align:center; font-family:var(--font); font-size:12px;
+  font-weight:600; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
+  border:none; background:transparent; color:var(--dim); transition:all 0.15s;
+}
+.progress-tab.active { background:var(--accent); color:#0e0e0f; }
+
+/* ── BODY TRACKING ── */
+.body-section { padding:0 16px; }
+.body-input-row {
+  display:flex; gap:8px; margin-bottom:16px; align-items:center;
+}
+.body-input-row input[type="date"],
+.body-input-row input[type="number"] {
+  flex:1; background:var(--s2); border:1px solid var(--border2); border-radius:var(--radius);
+  color:var(--text); font-family:var(--font); font-size:13px; padding:10px 12px;
+}
+.body-input-row input:focus { outline:none; border-color:var(--accent); }
+.body-unit-label { font-size:11px; color:var(--muted); font-weight:600; min-width:24px; }
+.body-save-btn {
+  background:var(--accent); color:#0e0e0f; border:none; border-radius:var(--radius);
+  padding:10px 16px; font-family:var(--font); font-size:13px; font-weight:700; cursor:pointer;
+}
+.body-chart-wrap {
+  background:var(--s1); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; margin-bottom:16px;
+}
+.body-chart-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:12px; }
+canvas#bodyChart { width:100% !important; }
+.body-log-list { margin-bottom:16px; }
+.body-log-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 12px; background:var(--s1); border:1px solid var(--border);
+  border-radius:var(--radius); margin-bottom:6px;
+}
+.body-log-date { font-size:12px; color:var(--muted); }
+.body-log-weight { font-size:15px; font-weight:700; color:var(--text); }
+.body-log-diff { font-size:11px; font-weight:600; margin-left:6px; }
+.body-log-diff.up { color:#e06060; }
+.body-log-diff.down { color:#50c878; }
+.body-log-diff.same { color:var(--dim); }
+.body-log-del {
+  background:transparent; border:none; color:var(--dim); cursor:pointer; font-size:16px;
+  padding:4px 8px; border-radius:4px;
+}
+.body-log-del:hover { color:#e06060; }
+.body-empty { padding:32px 0; text-align:center; color:var(--dim); font-size:13px; }
+.body-stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
+
 /* ── SETTINGS PAGE ── */
 .settings-header { padding:20px 16px 12px; }
 .settings-title { font-size:22px; font-weight:900; letter-spacing:-0.3px; }
@@ -620,22 +675,49 @@ canvas#progressChart { width:100% !important; }
     </section>
 
     <!-- PROGRESS -->
-    <section class="page" id="page-progress" aria-label="Exercise progress">
+    <section class="page" id="page-progress" aria-label="Progress">
       <div class="progress-header">
         <div class="progress-title">Progress</div>
       </div>
-      <div class="ex-search-wrap">
-        <input class="ex-search" type="text" id="progress-search" placeholder="Search exercises..." oninput="filterProgressPicker()" aria-label="Search exercises">
+      <div class="progress-tabs">
+        <button class="progress-tab active" id="ptab-body" onclick="showProgressTab('body')">Body</button>
+        <button class="progress-tab" id="ptab-lifts" onclick="showProgressTab('lifts')">Lifts</button>
       </div>
-      <div class="ex-picker-wrap">
-        <select class="ex-picker" id="progress-picker" onchange="renderProgress()" aria-label="Select exercise"></select>
+
+      <!-- BODY TAB -->
+      <div id="progress-body">
+        <div class="body-section">
+          <div class="body-input-row">
+            <input type="date" id="body-date" aria-label="Date">
+            <input type="number" id="body-weight" placeholder="Weight" step="0.1" min="0" aria-label="Body weight">
+            <span class="body-unit-label" id="body-unit-label">kg</span>
+            <button class="body-save-btn" onclick="saveBodyWeight()">+</button>
+          </div>
+          <div class="body-stats-row" id="body-stats"></div>
+          <div class="body-chart-wrap" id="body-chart-wrap" style="display:none">
+            <div class="body-chart-label">Weight trend</div>
+            <canvas id="bodyChart" height="160" role="img" aria-label="Body weight chart"></canvas>
+          </div>
+          <div class="body-log-list" id="body-log-list"></div>
+          <div class="body-empty" id="body-empty">No weight entries yet. Log your first one above.</div>
+        </div>
       </div>
-      <div class="pr-stat-row" id="pr-stats"></div>
-      <div class="chart-wrap" id="chart-wrap" style="display:none">
-        <div class="chart-label">Best weight per session (kg)</div>
-        <canvas id="progressChart" height="160" role="img" aria-label="Weight progression chart"></canvas>
+
+      <!-- LIFTS TAB -->
+      <div id="progress-lifts" style="display:none">
+        <div class="ex-search-wrap">
+          <input class="ex-search" type="text" id="progress-search" placeholder="Search exercises..." oninput="filterProgressPicker()" aria-label="Search exercises">
+        </div>
+        <div class="ex-picker-wrap">
+          <select class="ex-picker" id="progress-picker" onchange="renderProgress()" aria-label="Select exercise"></select>
+        </div>
+        <div class="pr-stat-row" id="pr-stats"></div>
+        <div class="chart-wrap" id="chart-wrap" style="display:none">
+          <div class="chart-label">Best weight per session (kg)</div>
+          <canvas id="progressChart" height="160" role="img" aria-label="Weight progression chart"></canvas>
+        </div>
+        <div class="progress-empty" id="progress-empty">No data logged yet for this exercise.</div>
       </div>
-      <div class="progress-empty" id="progress-empty">No data logged yet for this exercise.</div>
     </section>
 
     <!-- SETTINGS -->
@@ -924,6 +1006,8 @@ let calViewDate = new Date();
 let calSelectedDate = null;
 const profileModalState = { luis: null, her: null };
 const UNIT_STORAGE_KEY = 'gymtracker_units';
+const BODY_STORAGE_KEY = 'gymtracker_body';
+let progressTab = 'body';
 
 function loadUnitPrefs() {
   try { return JSON.parse(localStorage.getItem(UNIT_STORAGE_KEY)) || {}; } catch { return {}; }
@@ -1022,7 +1106,7 @@ function refreshCurrentPage() {
   if (currentPage === 'today') renderToday();
   if (currentPage === 'routine') renderRoutine();
   if (currentPage === 'history') renderHistory();
-  if (currentPage === 'progress') { populateProgressPicker(); renderProgress(); }
+  if (currentPage === 'progress') showProgressTab(progressTab);
 }
 
 // ─────────────────────────────────────────
@@ -1723,7 +1807,183 @@ function deleteSession(profile, date, dayIdx) {
 }
 
 // ─────────────────────────────────────────
-// PROGRESS PAGE
+// PROGRESS PAGE — TABS
+// ─────────────────────────────────────────
+function showProgressTab(tab) {
+  progressTab = tab;
+  document.getElementById('ptab-body').classList.toggle('active', tab === 'body');
+  document.getElementById('ptab-lifts').classList.toggle('active', tab === 'lifts');
+  document.getElementById('progress-body').style.display = tab === 'body' ? '' : 'none';
+  document.getElementById('progress-lifts').style.display = tab === 'lifts' ? '' : 'none';
+  if (tab === 'body') renderBodyTracking();
+  if (tab === 'lifts') { populateProgressPicker(); renderProgress(); }
+}
+
+// ─────────────────────────────────────────
+// BODY WEIGHT TRACKING
+// ─────────────────────────────────────────
+function loadBodyData() {
+  try { return JSON.parse(localStorage.getItem(BODY_STORAGE_KEY)) || { luis: [], her: [] }; }
+  catch { return { luis: [], her: [] }; }
+}
+function saveBodyData(data) {
+  localStorage.setItem(BODY_STORAGE_KEY, JSON.stringify(data));
+}
+
+function saveBodyWeight() {
+  const dateEl = document.getElementById('body-date');
+  const weightEl = document.getElementById('body-weight');
+  const date = dateEl.value;
+  const weight = parseFloat(weightEl.value);
+  if (!date || isNaN(weight) || weight <= 0) {
+    showToast('Enter a valid date and weight');
+    return;
+  }
+  const data = loadBodyData();
+  if (!data[currentProfile]) data[currentProfile] = [];
+  const existing = data[currentProfile].findIndex(e => e.date === date);
+  if (existing >= 0) {
+    data[currentProfile][existing].weight = weight;
+  } else {
+    data[currentProfile].push({ date, weight });
+  }
+  data[currentProfile].sort((a, b) => b.date.localeCompare(a.date));
+  saveBodyData(data);
+  weightEl.value = '';
+  renderBodyTracking();
+  showToast('Weight saved');
+}
+
+function deleteBodyEntry(date) {
+  const data = loadBodyData();
+  data[currentProfile] = (data[currentProfile] || []).filter(e => e.date !== date);
+  saveBodyData(data);
+  renderBodyTracking();
+}
+
+function renderBodyTracking() {
+  const dateEl = document.getElementById('body-date');
+  if (!dateEl.value) dateEl.value = toDateStr(new Date());
+
+  const data = loadBodyData();
+  const entries = (data[currentProfile] || []).slice().sort((a, b) => b.date.localeCompare(a.date));
+  const emptyEl = document.getElementById('body-empty');
+  const statsEl = document.getElementById('body-stats');
+  const chartWrap = document.getElementById('body-chart-wrap');
+  const listEl = document.getElementById('body-log-list');
+
+  if (!entries.length) {
+    emptyEl.style.display = 'block';
+    statsEl.innerHTML = '';
+    chartWrap.style.display = 'none';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  const latest = entries[0].weight;
+  const oldest = entries[entries.length - 1].weight;
+  const diff = latest - oldest;
+  const diffStr = diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
+  const min = Math.min(...entries.map(e => e.weight));
+  const max = Math.max(...entries.map(e => e.weight));
+
+  statsEl.innerHTML = `
+    <div class="pr-stat"><div class="pr-stat-val">${latest}<span style="font-size:12px;color:var(--muted)">kg</span></div><div class="pr-stat-lbl">Current</div></div>
+    <div class="pr-stat"><div class="pr-stat-val">${diffStr}<span style="font-size:12px;color:var(--muted)">kg</span></div><div class="pr-stat-lbl">Change</div></div>
+    <div class="pr-stat"><div class="pr-stat-val">${min}–${max}</div><div class="pr-stat-lbl">Range</div></div>`;
+
+  const chronological = entries.slice().reverse();
+  if (chronological.length >= 2) {
+    chartWrap.style.display = 'block';
+    drawBodyChart(chronological);
+  } else {
+    chartWrap.style.display = 'none';
+  }
+
+  listEl.innerHTML = entries.map((e, i) => {
+    let diffHtml = '';
+    if (i < entries.length - 1) {
+      const prev = entries[i + 1].weight;
+      const d = e.weight - prev;
+      if (d > 0) diffHtml = `<span class="body-log-diff up">+${d.toFixed(1)}</span>`;
+      else if (d < 0) diffHtml = `<span class="body-log-diff down">${d.toFixed(1)}</span>`;
+      else diffHtml = `<span class="body-log-diff same">0</span>`;
+    }
+    return `<div class="body-log-item">
+      <span class="body-log-date">${formatDate(e.date)}</span>
+      <span><span class="body-log-weight">${e.weight} kg</span>${diffHtml}</span>
+      <button class="body-log-del" onclick="deleteBodyEntry('${escapeAttr(e.date)}')" aria-label="Delete entry">×</button>
+    </div>`;
+  }).join('');
+}
+
+function drawBodyChart(points) {
+  const canvas = document.getElementById('bodyChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 340;
+  const H = 140;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+
+  const accent = currentProfile === 'luis' ? '#e8c547' : '#e06090';
+  const padL = 36, padR = 16, padT = 16, padB = 28;
+  const cW = W - padL - padR;
+  const cH = H - padT - padB;
+
+  const vals = points.map(p => p.weight);
+  const minV = Math.min(...vals) - 1;
+  const maxV = Math.max(...vals) + 1;
+  const range = maxV - minV || 1;
+
+  const toX = i => padL + (i / (points.length - 1)) * cW;
+  const toY = v => padT + cH - ((v - minV) / range) * cH;
+
+  ctx.strokeStyle = '#2e2e33';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (i / 4) * cH;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cW, y); ctx.stroke();
+    const val = (maxV - (i / 4) * range).toFixed(1);
+    ctx.fillStyle = '#4a4a55'; ctx.font = '10px Archivo'; ctx.textAlign = 'right';
+    ctx.fillText(val, padL - 4, y + 3);
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(vals[0]));
+  points.forEach((p, i) => i > 0 && ctx.lineTo(toX(i), toY(vals[i])));
+  ctx.lineTo(toX(points.length - 1), padT + cH);
+  ctx.lineTo(toX(0), padT + cH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + cH);
+  grad.addColorStop(0, accent + '30');
+  grad.addColorStop(1, accent + '00');
+  ctx.fillStyle = grad; ctx.fill();
+
+  ctx.beginPath();
+  ctx.strokeStyle = accent; ctx.lineWidth = 2;
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(toX(i), toY(vals[i])) : ctx.lineTo(toX(i), toY(vals[i])));
+  ctx.stroke();
+
+  points.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(toX(i), toY(vals[i]), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = accent; ctx.fill();
+  });
+
+  ctx.fillStyle = '#4a4a55'; ctx.font = '9px Archivo'; ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(points.length / 5));
+  points.forEach((p, i) => {
+    if (i === 0 || i === points.length - 1 || i % step === 0) {
+      ctx.fillText(formatDateShort(p.date), toX(i), H - 6);
+    }
+  });
+}
+
+// ─────────────────────────────────────────
+// PROGRESS PAGE — LIFTS
 // ─────────────────────────────────────────
 function populateProgressPicker() {
   const picker = document.getElementById('progress-picker');
@@ -1923,6 +2183,7 @@ function drawChart(points) {
 // ─────────────────────────────────────────
 function exportData() {
   const data = loadData();
+  data._body = loadBodyData();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1968,6 +2229,13 @@ function importData(event) {
             her: Array.isArray(imported.her) ? imported.her : []
           };
           saveData(safeData);
+          if (imported._body) {
+            const safeBody = {
+              luis: Array.isArray(imported._body.luis) ? imported._body.luis : [],
+              her: Array.isArray(imported._body.her) ? imported._body.her : []
+            };
+            saveBodyData(safeBody);
+          }
           showToast('Data imported successfully');
           refreshCurrentPage();
         }
@@ -1987,6 +2255,7 @@ function confirmClearData() {
     'Clear Everything',
     () => {
       saveData({ luis: [], her: [] });
+      saveBodyData({ luis: [], her: [] });
       showToast('All data cleared');
       refreshCurrentPage();
     }
@@ -2038,7 +2307,8 @@ document.addEventListener('keydown', function(e) {
 // ─────────────────────────────────────────
 window.addEventListener('resize', function() {
   if (currentPage === 'progress') {
-    renderProgress();
+    if (progressTab === 'body') renderBodyTracking();
+    else renderProgress();
   }
 });
 
