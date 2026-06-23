@@ -697,7 +697,7 @@ canvas#bodyChart { width:100% !important; }
         <div class="body-section">
           <div class="body-input-row">
             <input type="date" id="body-date" aria-label="Date">
-            <input type="number" id="body-weight" placeholder="Weight" step="0.1" min="0" aria-label="Body weight">
+            <input type="number" id="body-weight" placeholder="Weight" step="0.1" min="0" inputmode="decimal" aria-label="Body weight">
             <span class="body-unit-label" id="body-unit-label">kg</span>
             <button class="body-save-btn" onclick="saveBodyWeight()">+</button>
           </div>
@@ -1442,11 +1442,11 @@ function renderSets() {
             <span class="side-label">L</span>
             <div class="weight-adjust">
               <button class="adj-btn" onclick="adjustWeight(${i},-2.5,'weight')" aria-label="Decrease L weight">−</button>
-              <input class="set-input" type="number" placeholder="—" value="${s.weight}" min="0" step="0.5"
+              <input class="set-input" type="number" placeholder="—" value="${s.weight}" min="0" step="0.5" inputmode="decimal"
                 oninput="updateSet(${i},'weight',this)" aria-label="Set ${i+1} L weight">
               <button class="adj-btn" onclick="adjustWeight(${i},2.5,'weight')" aria-label="Increase L weight">+</button>
             </div>
-            <input class="set-input" type="number" placeholder="—" value="${s.reps}" min="0" step="1"
+            <input class="set-input" type="number" placeholder="—" value="${s.reps}" min="0" step="1" inputmode="numeric"
               oninput="updateSet(${i},'reps',this)" aria-label="Set ${i+1} L reps">
             <input class="set-input note-input" type="text" placeholder="note…" value="${escapeAttr(s.note||'')}"
               oninput="pendingSets[${i}].note=this.value" aria-label="Set ${i+1} L note">
@@ -1455,11 +1455,11 @@ function renderSets() {
             <span class="side-label">R</span>
             <div class="weight-adjust">
               <button class="adj-btn" onclick="adjustWeight(${i},-2.5,'weightR')" aria-label="Decrease R weight">−</button>
-              <input class="set-input" type="number" placeholder="—" value="${s.weightR||''}" min="0" step="0.5"
+              <input class="set-input" type="number" placeholder="—" value="${s.weightR||''}" min="0" step="0.5" inputmode="decimal"
                 oninput="updateSet(${i},'weightR',this)" aria-label="Set ${i+1} R weight">
               <button class="adj-btn" onclick="adjustWeight(${i},2.5,'weightR')" aria-label="Increase R weight">+</button>
             </div>
-            <input class="set-input" type="number" placeholder="—" value="${s.repsR||''}" min="0" step="1"
+            <input class="set-input" type="number" placeholder="—" value="${s.repsR||''}" min="0" step="1" inputmode="numeric"
               oninput="updateSet(${i},'repsR',this)" aria-label="Set ${i+1} R reps">
             <input class="set-input note-input" type="text" placeholder="note…" value="${escapeAttr(s.noteR||'')}"
               oninput="pendingSets[${i}].noteR=this.value" aria-label="Set ${i+1} R note">
@@ -1477,11 +1477,11 @@ function renderSets() {
         <div class="set-num">${i+1}</div>
         <div class="weight-adjust">
           <button class="adj-btn" onclick="adjustWeight(${i},-2.5,'weight')" aria-label="Decrease weight">−</button>
-          <input class="set-input" type="number" placeholder="—" value="${s.weight}" min="0" step="0.5"
+          <input class="set-input" type="number" placeholder="—" value="${s.weight}" min="0" step="0.5" inputmode="decimal"
             oninput="updateSet(${i},'weight',this)" aria-label="Set ${i+1} weight">
           <button class="adj-btn" onclick="adjustWeight(${i},2.5,'weight')" aria-label="Increase weight">+</button>
         </div>
-        <input class="set-input" type="number" placeholder="—" value="${s.reps}" min="0" step="1"
+        <input class="set-input" type="number" placeholder="—" value="${s.reps}" min="0" step="1" inputmode="numeric"
           oninput="updateSet(${i},'reps',this)" aria-label="Set ${i+1} reps">
         <input class="set-input note-input" type="text" placeholder="note…" value="${escapeAttr(s.note||'')}"
           oninput="pendingSets[${i}].note=this.value" aria-label="Set ${i+1} note">
