@@ -294,6 +294,8 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 .wo-slide-up { animation:wo-slide-up 0.2s ease-out; }
 .wo-slide-down { animation:wo-slide-down 0.2s ease-out; }
 #today-content.wo-swiping { overflow:hidden; touch-action:pan-x; }
+#page-today.active { display:flex; flex-direction:column; min-height:100%; }
+#today-content { flex:1; }
 
 .wo-prev-exercise-card {
   margin:10px 16px; background:var(--s1); border:1px solid var(--border);
