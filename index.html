@@ -281,6 +281,14 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
   justify-content:center; gap:8px;
 }
 .wo-return-btn:hover { border-color:var(--accent); }
+
+/* swipe animations */
+@keyframes wo-slide-up { from { transform:translateY(40px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes wo-slide-down { from { transform:translateY(-40px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.wo-slide-up { animation:wo-slide-up 0.2s ease-out; }
+.wo-slide-down { animation:wo-slide-down 0.2s ease-out; }
+#today-content.wo-swiping { overflow:hidden; touch-action:pan-x; }
+
 .wo-prev-exercise-card {
   margin:8px 16px; background:var(--s1); border:1px solid var(--border);
   border-radius:var(--radius); overflow:hidden;
@@ -1559,31 +1567,84 @@ function initSetDragDrop() {
 }
 
 function initSwipeGesture() {
-  const card = document.getElementById('wo-card');
-  if (!card) return;
-  let startY = 0, moved = false;
-  card.addEventListener('touchstart', e => {
-    startY = e.touches[0].clientY;
-    moved = false;
-  }, { passive: true });
-  card.addEventListener('touchmove', e => {
-    const dy = e.touches[0].clientY - startY;
-    if (Math.abs(dy) > 30) moved = true;
-  }, { passive: true });
-  card.addEventListener('touchend', e => {
-    if (!moved) return;
-    const dy = e.changedTouches[0].clientY - startY;
+  // no-op: swipe is now handled by the persistent listener in initWorkoutSwipe()
+}
+
+let woSwipeInstalled = false;
+function initWorkoutSwipe() {
+  if (woSwipeInstalled) return;
+  woSwipeInstalled = true;
+  const container = document.getElementById('today-content');
+  if (!container) return;
+
+  let startY = 0, startX = 0, swiping = false;
+
+  container.addEventListener('touchstart', e => {
     const wo = getWo();
-    if (!wo) return;
-    if (dy > 60 && wo.currentIdx > 0) {
-      wo.viewMode = 'prev';
-      wo.viewIdx = wo.currentIdx - 1;
-      renderWorkout();
-    } else if (dy < -60 && wo.currentIdx < wo.queue.length - 1) {
-      wo.viewMode = 'next';
-      renderWorkout();
+    if (!wo || wo.finished) return;
+    startY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
+    swiping = false;
+  }, { passive: true });
+
+  container.addEventListener('touchmove', e => {
+    const wo = getWo();
+    if (!wo || wo.finished) return;
+    const dy = e.touches[0].clientY - startY;
+    const dx = e.touches[0].clientX - startX;
+    if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+      swiping = true;
+      e.preventDefault();
+      container.classList.add('wo-swiping');
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchend', e => {
+    container.classList.remove('wo-swiping');
+    if (!swiping) return;
+    swiping = false;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dy) < 60) return;
+
+    const wo = getWo();
+    if (!wo || wo.finished) return;
+
+    if (wo.viewMode === null) {
+      if (dy > 60 && wo.currentIdx > 0) {
+        wo.viewMode = 'prev';
+        wo.viewIdx = wo.currentIdx - 1;
+        renderWorkoutAnimated('wo-slide-down');
+      } else if (dy < -60 && wo.currentIdx < wo.queue.length - 1) {
+        wo.viewMode = 'next';
+        renderWorkoutAnimated('wo-slide-up');
+      }
+    } else if (wo.viewMode === 'prev') {
+      if (dy < -60) {
+        wo.viewMode = null;
+        wo.viewIdx = null;
+        renderWorkoutAnimated('wo-slide-up');
+      }
+    } else if (wo.viewMode === 'next') {
+      if (dy > 60) {
+        wo.viewMode = null;
+        wo.viewIdx = null;
+        renderWorkoutAnimated('wo-slide-down');
+      }
     }
   });
+}
+
+function renderWorkoutAnimated(animClass) {
+  const container = document.getElementById('today-content');
+  renderWorkout();
+  if (animClass && container.firstElementChild) {
+    const wrapper = container.querySelector('.wo-exercise-card, .wo-nav-preview, .wo-prev-exercise-card, .wo-return-btn');
+    if (wrapper) {
+      const parent = wrapper.parentElement || container;
+      parent.classList.add(animClass);
+      parent.addEventListener('animationend', () => parent.classList.remove(animClass), { once: true });
+    }
+  }
 }
 
 function renderPrevExercises() {
@@ -1631,6 +1692,7 @@ function renderPrevExercises() {
 }
 
 function renderNextExercises() {
+
   const container = document.getElementById('today-content');
   const wo = getWo();
 
@@ -1660,9 +1722,10 @@ function renderNextExercises() {
 function returnToCurrent() {
   const wo = getWo();
   if (!wo) return;
+  const wasMode = wo.viewMode;
   wo.viewMode = null;
   wo.viewIdx = null;
-  renderWorkout();
+  renderWorkoutAnimated(wasMode === 'prev' ? 'wo-slide-up' : 'wo-slide-down');
 }
 
 function deletePrevSet(exIdx, setIdx) {
@@ -2708,6 +2771,7 @@ if ('serviceWorker' in navigator) {
 // INIT
 // ─────────────────────────────────────────
 renderToday();
+initWorkoutSwipe();
 </script>
 </body>
 </html>
