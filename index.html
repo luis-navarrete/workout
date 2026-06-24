@@ -133,6 +133,8 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
   font-family:var(--font); font-size:15px; font-weight:700; padding:14px; cursor:pointer;
 }
 .start-btn:hover { opacity:0.88; }
+@keyframes bounce-btn { 0%,100% { transform:translateY(0); } 25% { transform:translateY(-8px); } 50% { transform:translateY(0); } 75% { transform:translateY(-4px); } }
+.start-btn.bounce { animation:bounce-btn 0.5s ease 2; }
 
 /* workout mode */
 .wo-timer-bar {
@@ -2216,10 +2218,21 @@ function renderCalendarDetail(data) {
   });
 
   const hasDataForProfile = (data[currentProfile] || []).some(s => s.date === calSelectedDate);
-  if (!hasDataForProfile && !calLogMode) {
-    html += `<div class="cal-log-routine-wrap">
-      <button class="cal-log-routine-btn" onclick="startCalLogRoutine()">Log Routine</button>
-    </div>`;
+  const todayStr = toDateStr(new Date());
+  const isFuture = calSelectedDate > todayStr;
+  const isToday = calSelectedDate === todayStr;
+  const hasActiveWorkout = !!getWo();
+
+  if (!hasDataForProfile && !calLogMode && !isFuture) {
+    if (isToday && !hasActiveWorkout) {
+      html += `<div class="cal-log-routine-wrap">
+        <button class="cal-log-routine-btn" onclick="goToTodayAndBounce()">Log Routine</button>
+      </div>`;
+    } else if (!isToday) {
+      html += `<div class="cal-log-routine-wrap">
+        <button class="cal-log-routine-btn" onclick="startCalLogRoutine()">Log Routine</button>
+      </div>`;
+    }
   }
 
   if (calLogMode && calLogMode.date === calSelectedDate) {
@@ -2241,6 +2254,18 @@ function renderCalendarDetail(data) {
 }
 
 let calLogMode = null;
+
+function goToTodayAndBounce() {
+  showPage('today');
+  requestAnimationFrame(() => {
+    const btn = document.querySelector('.start-btn');
+    if (btn) {
+      btn.classList.add('bounce');
+      btn.addEventListener('animationend', () => btn.classList.remove('bounce'), { once: true });
+      btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+}
 
 function startCalLogRoutine() {
   const routine = ROUTINES[currentProfile];
