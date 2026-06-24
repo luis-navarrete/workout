@@ -1343,6 +1343,7 @@ function renderWorkout() {
   const container = document.getElementById('today-content');
   const wo = getWo();
   if (!wo) return;
+  document.getElementById('today-streak').style.display = 'none';
 
   if (wo.finished) { renderWorkoutSummary(); return; }
 
