@@ -141,11 +141,14 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 }
 .wo-elapsed { font-size:18px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; }
 .wo-progress-label { font-size:11px; color:var(--muted); }
-.wo-stop-btn {
-  background:var(--red-dim); color:var(--red); border:1px solid var(--red);
-  border-radius:var(--radius); font-family:var(--font); font-size:11px; font-weight:700;
-  padding:5px 12px; cursor:pointer;
+.wo-timer-btns { display:flex; gap:6px; }
+.wo-stop-btn, .wo-pause-btn {
+  background:var(--s3); border:1px solid var(--border2); color:var(--muted);
+  border-radius:var(--radius); width:32px; height:32px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; padding:0;
 }
+.wo-stop-btn { background:var(--red-dim); border-color:var(--red); color:var(--red); }
+.wo-stop-btn svg, .wo-pause-btn svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
 
 .wo-exercise-card {
   margin:12px 16px; background:var(--s1); border:1px solid var(--border);
@@ -201,12 +204,25 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 .wo-set-entry-label { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
 .wo-set-entry-row {
   display:flex; gap:8px; align-items:center; margin-bottom:8px;
+  min-width:0;
 }
 .wo-set-entry-row input {
-  flex:1; background:var(--s2); border:1px solid var(--border2); border-radius:var(--radius);
+  flex:1; min-width:0; background:var(--s2); border:1px solid var(--border2); border-radius:var(--radius);
   color:var(--text); font-family:var(--font); font-size:14px; font-weight:500;
-  padding:10px 12px; text-align:center; -moz-appearance:textfield;
+  padding:10px 8px; text-align:center; -moz-appearance:textfield;
 }
+.wo-perside-grid {
+  display:grid; grid-template-columns:auto 1fr 1fr; gap:6px; align-items:center; margin-bottom:8px;
+}
+.wo-perside-grid .wo-side-lbl { font-size:11px; font-weight:700; color:var(--muted); }
+.wo-perside-grid input {
+  min-width:0; background:var(--s2); border:1px solid var(--border2); border-radius:var(--radius);
+  color:var(--text); font-family:var(--font); font-size:14px; font-weight:500;
+  padding:10px 8px; text-align:center; -moz-appearance:textfield;
+}
+.wo-perside-grid input:focus { outline:none; border-color:var(--accent); }
+.wo-perside-grid input::-webkit-inner-spin-button,
+.wo-perside-grid input::-webkit-outer-spin-button { -webkit-appearance:none; }
 .wo-set-entry-row input:focus { outline:none; border-color:var(--accent); }
 .wo-set-entry-row input::-webkit-inner-spin-button,
 .wo-set-entry-row input::-webkit-outer-spin-button { -webkit-appearance:none; }
@@ -272,16 +288,6 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 .wo-nav-preview-ex:last-child { border-bottom:none; }
 .wo-nav-preview-name { font-weight:500; }
 .wo-nav-preview-target { font-size:11px; color:var(--muted); }
-.wo-return-btn {
-  margin:0 16px 12px; width:calc(100% - 32px);
-  background:var(--s2); border:1px solid var(--border2);
-  border-radius:var(--radius); font-family:var(--font);
-  font-size:12px; font-weight:600; padding:10px 14px; cursor:pointer;
-  color:var(--accent); text-align:center; display:flex; align-items:center;
-  justify-content:center; gap:8px;
-}
-.wo-return-btn:hover { border-color:var(--accent); }
-
 /* swipe animations */
 @keyframes wo-slide-up { from { transform:translateY(40px); opacity:0; } to { transform:translateY(0); opacity:1; } }
 @keyframes wo-slide-down { from { transform:translateY(-40px); opacity:0; } to { transform:translateY(0); opacity:1; } }
@@ -1284,8 +1290,11 @@ function startWorkout() {
     postponed: [],
     currentIdx: 0,
     finished: false,
+    paused: false,
+    pausedAt: null,
     viewMode: null,
-    viewIdx: null
+    viewIdx: null,
+    editingPrevIdx: null
   });
   getWo().timerInterval = setInterval(updateWorkoutTimer, 1000);
   renderToday();
@@ -1352,11 +1361,7 @@ function renderWorkout() {
     setLabel = `Set ${nextNum}`;
   }
 
-  let html = `<div class="wo-timer-bar">
-    <div><span class="wo-elapsed" id="wo-elapsed">0:00</span></div>
-    <div class="wo-progress-label">${doneCount}/${wo.queue.length} exercises</div>
-    <button class="wo-stop-btn" onclick="stopWorkout()">Stop</button>
-  </div>`;
+  let html = woTimerBarHtml(`${doneCount}/${wo.queue.length} exercises`);
 
   if (wo.postponed.length) {
     html += `<div class="wo-postponed"><div class="wo-postponed-title">Postponed (${wo.postponed.length})</div>`;
@@ -1417,14 +1422,16 @@ function renderWorkout() {
       <div class="wo-set-entry-label">${setLabel}</div>`;
 
     if (cur.perSide) {
-      html += `<div class="wo-input-label"><span>L weight</span><span>L reps</span><span>R weight</span><span>R reps</span></div>
-      <div class="wo-set-entry-row">
+      html += `<div class="wo-perside-grid">
+        <span class="wo-side-lbl"></span><span class="wo-side-lbl" style="text-align:center">Weight</span><span class="wo-side-lbl" style="text-align:center">Reps</span>
+        <span class="wo-side-lbl">L</span>
         <input type="number" id="wo-weight" value="${defWeight}" inputmode="decimal" placeholder="${currentUnit}" min="0" step="0.5">
         <input type="number" id="wo-reps" value="${targetReps}" inputmode="numeric" placeholder="reps" min="0">
+        <span class="wo-side-lbl">R</span>
         <input type="number" id="wo-weight-r" value="${defWeight}" inputmode="decimal" placeholder="${currentUnit}" min="0" step="0.5">
         <input type="number" id="wo-reps-r" value="${targetReps}" inputmode="numeric" placeholder="reps" min="0">
-        ${isFirst ? '<button class="wo-warmup-toggle" id="wo-warmup-btn" onclick="this.classList.toggle(\'active\')">W</button>' : ''}
       </div>`;
+      if (isFirst) html += `<div style="margin-bottom:8px"><button class="wo-warmup-toggle" id="wo-warmup-btn" onclick="this.classList.toggle('active')">W Warm-up</button></div>`;
     } else {
       html += `<div class="wo-input-label"><span>Weight (${currentUnit})</span><span>Reps</span></div>
       <div class="wo-set-entry-row">
@@ -1638,7 +1645,7 @@ function renderWorkoutAnimated(animClass) {
   const container = document.getElementById('today-content');
   renderWorkout();
   if (animClass && container.firstElementChild) {
-    const wrapper = container.querySelector('.wo-exercise-card, .wo-nav-preview, .wo-prev-exercise-card, .wo-return-btn');
+    const wrapper = container.querySelector('.wo-exercise-card, .wo-nav-preview, .wo-prev-exercise-card');
     if (wrapper) {
       const parent = wrapper.parentElement || container;
       parent.classList.add(animClass);
@@ -1647,40 +1654,69 @@ function renderWorkoutAnimated(animClass) {
   }
 }
 
+function woTimerBarHtml(label) {
+  const wo = getWo();
+  const paused = wo && wo.paused;
+  return `<div class="wo-timer-bar">
+    <div><span class="wo-elapsed" id="wo-elapsed">0:00</span></div>
+    <div class="wo-progress-label">${label}</div>
+    <div class="wo-timer-btns">
+      <button class="wo-pause-btn" onclick="togglePauseWorkout()" aria-label="${paused ? 'Resume' : 'Pause'}">
+        ${paused
+          ? '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+          : '<svg viewBox="0 0 24 24"><line x1="6" y1="4" x2="6" y2="20"/><line x1="18" y1="4" x2="18" y2="20"/></svg>'}
+      </button>
+      <button class="wo-stop-btn" onclick="stopWorkout()" aria-label="Stop">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+
 function renderPrevExercises() {
   const container = document.getElementById('today-content');
   const wo = getWo();
 
-  let html = `<div class="wo-timer-bar">
-    <div><span class="wo-elapsed" id="wo-elapsed">0:00</span></div>
-    <div class="wo-progress-label">Viewing previous</div>
-    <button class="wo-stop-btn" onclick="stopWorkout()">Stop</button>
-  </div>`;
-
-  html += `<button class="wo-return-btn" onclick="returnToCurrent()">↓ Back to ${escapeHtml(wo.queue[wo.currentIdx].name)} (${getWorkSetsCount(wo.queue[wo.currentIdx].sets)}/${parseTargetSets(wo.queue[wo.currentIdx].target)||3})</button>`;
+  let html = woTimerBarHtml('Viewing previous — swipe up to return');
 
   for (let i = wo.viewIdx; i >= 0; i--) {
     const ex = wo.queue[i];
     if (!ex.done && !ex.skipped) continue;
+    const editing = wo.editingPrevIdx === i;
     currentUnit = getUnitForExercise(ex.name);
     html += `<div class="wo-prev-exercise-card">
       <div class="wo-prev-ex-header">
         <span class="wo-prev-ex-name">${escapeHtml(ex.name)}</span>
-        <span class="wo-prev-ex-badge">${ex.skipped ? 'Skipped' : getWorkSetsCount(ex.sets) + ' sets'}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="wo-prev-ex-badge">${ex.skipped ? 'Skipped' : getWorkSetsCount(ex.sets) + ' sets'}</span>
+          <button class="wo-action-btn" style="flex:0;padding:5px 10px;font-size:10px" onclick="toggleEditPrev(${i})">${editing ? 'Done' : 'Edit'}</button>
+        </div>
       </div>`;
     if (ex.sets.length) {
-      html += '<div class="wo-logged-sets" id="wo-prev-sets-' + i + '">';
+      html += '<div class="wo-logged-sets">';
       let wn = 0;
       ex.sets.forEach((s, si) => {
         const numLabel = s.warmup ? 'W' : String(++wn);
-        html += `<div class="wo-logged-set">
-          <span class="wo-drag-handle" style="visibility:hidden">⠿</span>
-          <span class="wo-set-num">${numLabel}</span>
-          <span class="wo-set-detail">${displayWeight(s.weight)}${currentUnit}</span>
-          <span class="wo-set-detail">${s.reps} reps</span>
-          ${s.warmup ? '<span class="wo-warmup-tag">W</span>' : ''}
-          <button class="wo-del-set" onclick="deletePrevSet(${i},${si})" aria-label="Delete">✕</button>
-        </div>`;
+        if (editing) {
+          const wVal = displayWeight(s.weight);
+          html += `<div class="wo-logged-set">
+            <span class="wo-drag-handle" style="visibility:hidden">⠿</span>
+            <span class="wo-set-num">${numLabel}</span>
+            <input type="number" class="wo-edit-input" value="${wVal}" inputmode="decimal" onchange="editPrevSet(${i},${si},'weight',this.value)" style="width:60px;background:var(--s2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px;padding:4px 6px;text-align:center">
+            <input type="number" class="wo-edit-input" value="${s.reps}" inputmode="numeric" onchange="editPrevSet(${i},${si},'reps',this.value)" style="width:50px;background:var(--s2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px;padding:4px 6px;text-align:center">
+            ${s.warmup ? '<span class="wo-warmup-tag">W</span>' : '<span></span>'}
+            <button class="wo-del-set" onclick="deletePrevSet(${i},${si})" aria-label="Delete">✕</button>
+          </div>`;
+        } else {
+          html += `<div class="wo-logged-set">
+            <span class="wo-drag-handle" style="visibility:hidden">⠿</span>
+            <span class="wo-set-num">${numLabel}</span>
+            <span class="wo-set-detail">${displayWeight(s.weight)}${currentUnit}</span>
+            <span class="wo-set-detail">${s.reps} reps</span>
+            ${s.warmup ? '<span class="wo-warmup-tag">W</span>' : '<span></span>'}
+            <span></span>
+          </div>`;
+        }
       });
       html += '</div>';
     }
@@ -1689,20 +1725,17 @@ function renderPrevExercises() {
 
   container.innerHTML = html;
   updateWorkoutTimer();
+
+  container.querySelectorAll('.wo-edit-input').forEach(inp => {
+    inp.addEventListener('focus', function() { this.select(); });
+  });
 }
 
 function renderNextExercises() {
-
   const container = document.getElementById('today-content');
   const wo = getWo();
 
-  let html = `<div class="wo-timer-bar">
-    <div><span class="wo-elapsed" id="wo-elapsed">0:00</span></div>
-    <div class="wo-progress-label">Coming up</div>
-    <button class="wo-stop-btn" onclick="stopWorkout()">Stop</button>
-  </div>`;
-
-  html += `<button class="wo-return-btn" onclick="returnToCurrent()">↑ Back to ${escapeHtml(wo.queue[wo.currentIdx].name)} (${getWorkSetsCount(wo.queue[wo.currentIdx].sets)}/${parseTargetSets(wo.queue[wo.currentIdx].target)||3})</button>`;
+  let html = woTimerBarHtml('Coming up — swipe down to return');
 
   html += '<div class="wo-nav-preview"><div class="wo-nav-preview-head">Next exercises</div>';
   for (let i = wo.currentIdx + 1; i < wo.queue.length; i++) {
@@ -1719,13 +1752,23 @@ function renderNextExercises() {
   updateWorkoutTimer();
 }
 
-function returnToCurrent() {
+function toggleEditPrev(exIdx) {
   const wo = getWo();
   if (!wo) return;
-  const wasMode = wo.viewMode;
-  wo.viewMode = null;
-  wo.viewIdx = null;
-  renderWorkoutAnimated(wasMode === 'prev' ? 'wo-slide-up' : 'wo-slide-down');
+  wo.editingPrevIdx = wo.editingPrevIdx === exIdx ? null : exIdx;
+  renderPrevExercises();
+}
+
+function editPrevSet(exIdx, setIdx, field, value) {
+  const wo = getWo();
+  if (!wo) return;
+  const set = wo.queue[exIdx].sets[setIdx];
+  if (field === 'weight') {
+    set.weight = toStorageWeight(value);
+  } else if (field === 'reps') {
+    set.reps = value;
+  }
+  saveWorkoutProgress();
 }
 
 function deletePrevSet(exIdx, setIdx) {
@@ -1813,6 +1856,22 @@ function advanceToNext() {
       finishWorkout();
       return;
     }
+  }
+  renderWorkout();
+}
+
+function togglePauseWorkout() {
+  const wo = getWo();
+  if (!wo) return;
+  if (wo.paused) {
+    wo.startTime += Date.now() - wo.pausedAt;
+    wo.paused = false;
+    wo.pausedAt = null;
+    wo.timerInterval = setInterval(updateWorkoutTimer, 1000);
+  } else {
+    wo.paused = true;
+    wo.pausedAt = Date.now();
+    if (wo.timerInterval) { clearInterval(wo.timerInterval); wo.timerInterval = null; }
   }
   renderWorkout();
 }
