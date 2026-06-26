@@ -1198,7 +1198,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 function kgToLb(kg) { return +(kg * 2.20462).toFixed(1); }
-function lbToKg(lb) { return +(lb / 2.20462).toFixed(1); }
+function lbToKg(lb) { return +(lb / 2.20462).toFixed(4); }
 function displayWeight(kgVal) {
   if (kgVal === '' || kgVal === undefined) return '';
   const v = parseFloat(kgVal);
